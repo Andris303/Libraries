@@ -1,24 +1,22 @@
-All libraries I've made currently are in this repository.\n
-Guide to using them:\n
-
-Highlighter.lua\n
-Includes 1 function:\n
-Highlight(Instance: instance, Color: Color3, FillOpacity: Number, OutlineOpacity: Number, OutlineThickness: Number)\n
-
-
-Text.lua\n
-Includes 2 functions:\n
-Add(ID: string, Text: string, Color: Color3)\n
-Remove(ID: string)\n
-
-
-ESP.lua\n
-Includes 3 functions:\n
-AddPlayer(CharacterInstance: instance, IsLocalPlayer: bool, Username: string, Displayname: string, UserId: number, TeamName: string, ToolName: string), returns: (ID: string)\n
-RemovePlayer(ID: string)\n
-EditHealth(ID: string, Health: number)\n
-
-Example for ESP.lua:\n
+All libraries I've made currently are in this repository.  
+Guide to using them:  
+  
+Highlighter.lua  
+Includes 1 function:  
+Highlight(Instance: instance, Color: color3, FillOpacity: number, OutlineOpacity: number, OutlineThickness: number)  
+  
+Text.lua  
+Includes 2 functions:  
+Add(ID: string, Text: string, Color: color3)  
+Remove(ID: string)  
+  
+ESP.lua  
+Includes 3 functions:  
+AddPlayer(CharacterInstance: instance, IsLocalPlayer: bool, Username: string, Displayname: string, UserId: number, TeamName: string, ToolName: string), returns: (ID: string)  
+RemovePlayer(ID: string)  
+EditHealth(ID: string, Health: number)  
+  
+Example for ESP.lua:  
 ```lua
 local Lib = loadstring(game:HttpGet("https://raw.githubusercontent.com/Andris303/Libraries/refs/heads/main/ESP.lua"))()
 
