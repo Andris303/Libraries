@@ -1,20 +1,34 @@
 All libraries I've made currently are in this repository.
+
 Guide to using them:
 
+
 Highlighter.lua
+
 Includes 1 function:
+
 Highlight(Instance: instance, Color: Color3, FillOpacity: Number, OutlineOpacity: Number, OutlineThickness: Number)
 
+
 Text.lua
+
 Includes 2 functions:
+
 Add(ID: string, Text: string, Color: Color3)
+
 Remove(ID: string)
 
+
 ESP.lua
+
 Includes 3 functions:
+
 AddPlayer(CharacterInstance: instance, IsLocalPlayer: bool, Username: string, Displayname: string, UserId: number, TeamName: string, ToolName: string), returns: (ID: string)
+
 RemovePlayer(ID: string)
+
 EditHealth(ID: string, Health: number)
+
 
 Example for ESP.lua:
 ```lua
