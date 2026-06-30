@@ -83,7 +83,7 @@ local function ProjectPartCorners(Part, WriteOffset)
                     PositionY + SignR * RightY + SignU * UpY + SignL * LookY,
                     PositionZ + SignR * RightZ + SignU * UpZ + SignL * LookZ
                 )
-                local ScreenPoint, OnScreen = Camera:WorldToScreenPoint(WorldPoint)
+                local ScreenPoint, OnScreen = workspace.CurrentCamera:WorldToScreenPoint(WorldPoint)
                 if OnScreen then
                     WriteOffset = WriteOffset + 1
                     local Slot = Convex.Scratch.Points[WriteOffset]
