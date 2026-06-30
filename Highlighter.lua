@@ -1,4 +1,4 @@
-local Module = {}
+-- Credits to IAMPR1ME
 
 local Convex = {
     Scratch = {
@@ -128,7 +128,7 @@ local function DrawOutline(Hull, Size, Color, Opacity, Thickness)
     DrawingImmediate.Polyline(Convex.Scratch.Poly, Color, Opacity, Thickness)
 end
 
-function Module.Highlight(inst, color, opacityFill, opacityOutline, Thickness)
+local function Highlight(inst, color, opacityFill, opacityOutline, Thickness)
     local PointCount = 0
     PointCount = ProjectPartCorners(inst, PointCount)
     Convex.Static.HWMPoints = TruncateBuffer(Convex.Scratch.Points, PointCount, Convex.Static.HWMPoints)
@@ -138,4 +138,6 @@ function Module.Highlight(inst, color, opacityFill, opacityOutline, Thickness)
     DrawOutline(Convex.Scratch.Hull, Size, color, opacityOutline, Thickness)
 end
 
-return Module
+return {
+    Highlight = Highlight
+}
