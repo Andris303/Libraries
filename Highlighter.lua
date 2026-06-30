@@ -128,7 +128,7 @@ local function DrawOutline(Hull, Size, Color, Opacity, Thickness)
     DrawingImmediate.Polyline(Convex.Scratch.Poly, Color, Opacity, Thickness)
 end
 
-local function Module.Highlight(inst, color, opacityFill, opacityOutline, Thickness)
+function Module.Highlight(inst, color, opacityFill, opacityOutline, Thickness)
     local PointCount = 0
     PointCount = ProjectPartCorners(inst, PointCount)
     Convex.Static.HWMPoints = TruncateBuffer(Convex.Scratch.Points, PointCount, Convex.Static.HWMPoints)
