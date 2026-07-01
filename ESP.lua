@@ -45,6 +45,8 @@ end
 local function AddData(Char, BoolLocalPlayer, Username, DisplayName, UserId, TeamName, ToolName)
     if ESP[InstId(Char)] then return nil end
     if not CheckValidity(Char) then return nil end
+    
+    task.wait(.1)
     ESP[InstId(Char)] = Char
 
     Counter += 1
@@ -167,7 +169,8 @@ end
 
 local function RemoveData(ID)
     if not ID then return false end
-
+    
+    task.wait(.1)
     ESP[ID] = nil
     remove_model_data(ID)
 
@@ -179,6 +182,7 @@ local function EditHealth(ID, Health)
     if not ESP[ID] then return false end
     if ID == LocalId then return false end
 
+    task.wait(.1)
     edit_model_data({
         Health = Health
     }, ID)
