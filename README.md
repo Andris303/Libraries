@@ -10,7 +10,7 @@ Includes 2 functions:
 ---
 ### ESP.lua  
 Includes 3 functions:  
-1. `AddPlayer(CharacterInstance: instance, IsLocalPlayer: bool, Health: number, MaxHealth: number, Username: string, Displayname: string, UserId: number, TeamName: string, ToolName: string), returns: (ID: string)`  
+1. `AddPlayer(CharacterInstance: instance, IsLocalPlayer: bool, Health: number, MaxHealth: number, Username: string, Displayname: string, UserId: number, TeamName: string, ToolName: string)`  
 2. `RemovePlayer(ID: string)`  
 3. `EditHealth(ID: string, Health: number)`
 4. Also uses 3 global values: Read-only: `_G.ESPList`, `_G.ESPHealths` | Needs to be declared: `_G.WaitTime`
