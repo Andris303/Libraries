@@ -2,14 +2,19 @@ local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
 local RunService = game:GetService("RunService")
-local Counter = 0
-local Timer = 0
-local ESP = {}
 local BodyParts = {"LowerTorso", "Right Arm", "Right Leg", "Left Arm", "Left Leg", "LeftLowerLeg", "LeftUpperLeg", "RightLowerLeg", "RightUpperLeg", "LeftLowerArm", "LeftUpperArm", "RightLowerArm", "RightUpperArm", "LeftHand", "RightHand"}
 local FullParts = {"Head", "Torso", "Right Arm", "Right Leg", "Left Arm", "Left Leg", "UpperTorso", "LowerTorso", "HumanoidRootPart", "LeftUpperArm", "LeftLowerArm", "LeftHand", "RightUpperArm", "RightLowerArm", "RightHand", "LeftUpperLeg", "LeftLowerLeg", "LeftFoot", "RightUpperLeg", "RightLowerLeg", "RightFoot"}
 local R6Check = {"Head", "Torso", "Right Arm", "Right Leg", "Left Arm", "Left Leg"}
 local R15Check = {"Head", "UpperTorso", "LowerTorso", "HumanoidRootPart", "LeftUpperArm", "LeftLowerArm", "LeftHand", "RightUpperArm", "RightLowerArm", "RightHand", "LeftUpperLeg", "LeftLowerLeg", "LeftFoot", "RightUpperLeg", "RightLowerLeg", "RightFoot"}
+local ListCounter = 0
+local ESPQueue = {}
 local LocalId
+
+_G.ESPList = {}
+_G.ESPHealths = {}
+--_G.WaitTime = .01
+
+local WaitTime = _G.WaitTime or .01
 
 local function InstId(inst)
     if not inst or not inst.Parent then return nil end
@@ -42,35 +47,28 @@ local function CheckValidity(inst)
     return true
 end
 
-local function AddData(Char, BoolLocalPlayer, Username, DisplayName, UserId, TeamName, ToolName)
-    if ESP[InstId(Char)] then return nil end
+local function ResolveData(Char, BoolLocalPlayer, Health, MaxHealth, Username, DisplayName, UserId, TeamName, ToolName)
+    if ESPQueue[InstId(Char)] then return nil end
+    if _G.ESPList[InstId(Char)] then return nil end
     if not CheckValidity(Char) then return nil end
-    
-    task.wait(.1)
-    ESP[InstId(Char)] = Char
 
-    Counter += 1
-    local BoolLocalPlayer = BoolLocalPlayer or false
-    local Username = Username or "Enemy" .. tostring(Counter)
-    local DisplayName = DisplayName or "Enemy" .. tostring(Counter)
-    local UserId = UserId or 10000 + Counter
-    local ToolName = ToolName or "Gun"
-
-    local TeamName = TeamName or "nmWRunDYxcqH"
-    if BoolLocalPlayer and TeamName == "nmWRunDYxcqH" then TeamName = "LocalPlayer" end
-    if TeamName == "nmWRunDYxcqH" then TeamName = "Enemies" end
+    ListCounter += 1
+    if Username == "_Enemy" then Username = "Enemy" .. tostring(ListCounter) end
+    if DisplayName == "_Enemy" then DisplayName = "Enemy" .. tostring(ListCounter) end
+    if UserId == 10000 then UserId = 10000 + ListCounter end
 
     if BoolLocalPlayer then
         LocalId = InstId(Char)
-        override_local_data({
+
+        local Data = {
             LocalPlayer = LocalPlayer,
             Character = Char,
             Username = Username,
             Displayname = DisplayName,
             Userid = UserId,
             Humanoid = Char.Humanoid,
-            Health = Char.Humanoid.Health,
-            MaxHealth = Char.Humanoid.MaxHealth,
+            Health = Health,
+            MaxHealth = MaxHealth,
             RigType = Char:FindFirstChild("RightUpperArm") and 1 or 0,
             Teamname = TeamName,
             Toolname = ToolName,
@@ -83,19 +81,15 @@ local function AddData(Char, BoolLocalPlayer, Username, DisplayName, UserId, Tea
             LeftLeg = Char:FindFirstChild("Left Leg") or Char.LeftUpperLeg,
             RightLeg = Char:FindFirstChild("Right Leg") or Char.RightUpperLeg,
             LeftFoot = Char:FindFirstChild("LeftFoot") or Char["Left Leg"],
-        })
+        }
 
-        return InstId(Char)
+        return Data, InstId(Char)
     end
 
     local Parts = {
         Head = Char:FindFirstChild("Head"),
         HumanoidRootPart = Char:FindFirstChild("HumanoidRootPart"),
         Torso = Char:FindFirstChild("Torso"),
-        RightArm = Char:FindFirstChild("Right Arm"),
-        RightLeg = Char:FindFirstChild("Right Leg"),
-        LeftArm = Char:FindFirstChild("Left Arm"),
-        LeftLeg = Char:FindFirstChild("Left Leg"),
         UpperTorso = Char:FindFirstChild("UpperTorso"),
         LowerTorso = Char:FindFirstChild("LowerTorso"),
         LeftUpperArm = Char:FindFirstChild("LeftUpperArm"),
@@ -154,44 +148,112 @@ local function AddData(Char, BoolLocalPlayer, Username, DisplayName, UserId, Tea
         Aimbot_Part = Char.Head,
         Aimbot_TP_Part = Char.Head,
         Triggerbot_Part = Char.Head,
-        Health = math.floor(Char.Humanoid.Health),
-        MaxHealth = Char.Humanoid.MaxHealth,
+        Health = Health,
+        MaxHealth = MaxHealth,
         Toolname = ToolName,
         Teamname = TeamName,
         body_parts_data = Body,
         full_body_data = Full,
     }
 
-    add_model_data(Data, InstId(Char))
-
-    return InstId(Char)
+    return Data, InstId(Char)
 end
 
-local function RemoveData(ID)
-    if not ID then return false end
-    
-    task.wait(.1)
-    ESP[ID] = nil
-    remove_model_data(ID)
+local function AddPlayer(Char, BoolLocalPlayer, Health, MaxHealth, Username, DisplayName, UserId, TeamName, ToolName)
+    if not CheckValidity(Char) then return nil end
+    local ID = InstId(Char)
+    if ESPQueue[ID] then return nil end
+    if _G.ESPList[ID] then return nil end
 
-    return true
+    local BoolLocalPlayer = BoolLocalPlayer or false
+    local Health = Health or 100
+    local MaxHealth = MaxHealth or Health
+    local Username = Username or "_Enemy"
+    local DisplayName = DisplayName or "_Enemy"
+    local UserId = UserId or 10000
+    local ToolName = ToolName or "Gun"
+    local TeamName = TeamName or "_Enemies"
+    if BoolLocalPlayer and TeamName == "_Enemies" then TeamName = "LocalPlayer" end
+    if TeamName == "_Enemies" then TeamName = "Enemies" end
+
+    ESPQueue[InstId(Char)] = {{Char, BoolLocalPlayer, Health, MaxHealth, Username, DisplayName, UserId, TeamName, ToolName}, "Add"}
+end
+
+local function RemovePlayer(ID)
+    if not ID then return false end
+    if ESPQueue[ID] then return false end
+    if not _G.ESPList[ID] then return false end
+
+    ESPQueue[ID] = {{ID, "secret text"}, "Remove"}
 end
 
 local function EditHealth(ID, Health)
     if not ID or not Health then return false end
-    if not ESP[ID] then return false end
+    if ESPQueue[ID] then return false end
+    if not _G.ESPList[ID] then return false end
     if ID == LocalId then return false end
 
-    task.wait(.1)
-    edit_model_data({
-        Health = Health
-    }, ID)
-
-    return true
+    ESPQueue[ID] = {{ID, Health}, "Edit"}
 end
 
+task.spawn(function()
+    while true do
+        local BoolESPQueue = false
+        for i, v in ESPQueue do
+            BoolESPQueue = true
+        end
+        if not BoolESPQueue then
+            task.wait(WaitTime)
+        else
+            for ID, table in ESPQueue do
+                local ActionType = table[2]
+                local Table = table[1]
+                if ActionType == "Add" then
+                    task.wait(WaitTime)
+                    ESPQueue[ID] = nil
+
+                    local Data, InstID = ResolveData(Table[1], Table[2], Table[3], Table[4], Table[5], Table[6], Table[7], Table[8], Table[9])
+                    if not Data or not InstID then continue end
+
+                    _G.ESPList[InstID] = Data["Character"]
+                    _G.ESPHealths[InstID] = Data["Health"]
+
+                    if Data["PrimaryPart"] then
+                        print("Added: " .. Data["Username"])
+                        add_model_data(Data, InstID)
+                    else
+                        print("Added local: " .. Data["Username"])
+                        override_local_data(Data)
+                    end
+                elseif ActionType == "Remove" then
+                    task.wait(WaitTime)
+                    ESPQueue[ID] = nil
+
+                    local InstID = Table[1]
+                    if not InstID then continue end
+
+                    print("Removed: " .. InstID)
+                    _G.ESPList[InstID] = nil
+                    _G.ESPHealths[InstID] = nil
+                    remove_model_data(InstID)
+                elseif ActionType == "Edit" then
+                    task.wait(WaitTime)
+                    ESPQueue[ID] = nil
+
+                    local InstID = Table[1]
+                    local Health = Table[2]
+                    if not InstID or not Health then continue end
+
+                    _G.ESPHealths[InstID] = Health
+                    edit_model_data({Health = Health}, InstID)
+                end
+            end
+        end
+    end
+end)
+
 return {
-    AddPlayer = AddData,
-    RemovePlayer = RemoveData,
+    AddPlayer = AddPlayer,
+    RemovePlayer = RemovePlayer,
     EditHealth = EditHealth,
 }
