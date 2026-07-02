@@ -2,13 +2,26 @@ local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
 local RunService = game:GetService("RunService")
-local BodyParts = {"LowerTorso", "Right Arm", "Right Leg", "Left Arm", "Left Leg", "LeftLowerLeg", "LeftUpperLeg", "RightLowerLeg", "RightUpperLeg", "LeftLowerArm", "LeftUpperArm", "RightLowerArm", "RightUpperArm", "LeftHand", "RightHand"}
-local FullParts = {"Head", "Torso", "Right Arm", "Right Leg", "Left Arm", "Left Leg", "UpperTorso", "LowerTorso", "HumanoidRootPart", "LeftUpperArm", "LeftLowerArm", "LeftHand", "RightUpperArm", "RightLowerArm", "RightHand", "LeftUpperLeg", "LeftLowerLeg", "LeftFoot", "RightUpperLeg", "RightLowerLeg", "RightFoot"}
-local R6Check = {"Head", "Torso", "Right Arm", "Right Leg", "Left Arm", "Left Leg"}
-local R15Check = {"Head", "UpperTorso", "LowerTorso", "HumanoidRootPart", "LeftUpperArm", "LeftLowerArm", "LeftHand", "RightUpperArm", "RightLowerArm", "RightHand", "LeftUpperLeg", "LeftLowerLeg", "LeftFoot", "RightUpperLeg", "RightLowerLeg", "RightFoot"}
+local BodyParts = {"LowerTorso", "RightArm", "RightLeg", "LeftArm", "LeftLeg", "LeftLowerLeg", "LeftUpperLeg", "RightLowerLeg", "RightUpperLeg", "LeftLowerArm", "LeftUpperArm", "RightLowerArm", "RightUpperArm", "LeftHand", "RightHand"}
+local FullBodyParts = {"Head", "Torso", "RightArm", "RightLeg", "LeftArm", "LeftLeg", "UpperTorso", "LowerTorso", "HumanoidRootPart", "LeftUpperArm", "LeftLowerArm", "LeftHand", "RightUpperArm", "RightLowerArm", "RightHand", "LeftUpperLeg", "LeftLowerLeg", "LeftFoot", "RightUpperLeg", "RightLowerLeg", "RightFoot"}
+local R6Check = {"Head", "HumanoidRootPart", "Torso", "Right Arm", "Right Leg", "Left Arm", "Left Leg"}
+local R15Check = {"Head", "HumanoidRootPart", "UpperTorso", "LowerTorso", "HumanoidRootPart", "LeftUpperArm", "LeftLowerArm", "LeftHand", "RightUpperArm", "RightLowerArm", "RightHand", "LeftUpperLeg", "LeftLowerLeg", "LeftFoot", "RightUpperLeg", "RightLowerLeg", "RightFoot"}
 local ListCounter = 0
 local ESPQueue = {}
 local LocalId
+
+--[[
+_G.CustomParts = {
+    RigType = "R6",
+    HumanoidRootPart = "HumanoidRootPart",
+    Head = "Head",
+    Torso = "Torso",
+    LeftArm = "Left Arm",
+    RightArm = "Right Arm",
+    LeftLeg = "Left Leg",
+    RightLeg = "Right Leg",
+}
+]]
 
 _G.ESPList = {}
 _G.ESPHealths = {}
@@ -28,7 +41,13 @@ local function CheckValidity(inst)
         return false
     end
 
-    if inst:FindFirstChild("Torso") then
+    if _G.CustomParts then
+        for name, part in _G.CustomParts do
+            if name ~= "RigType" and not inst:FindFirstChild(part) then
+                return false
+            end
+        end
+    elseif inst:FindFirstChild("Torso") then
         for _, part in R6Check do
             if not inst:FindFirstChild(part) then
                 return false
@@ -57,9 +76,51 @@ local function ResolveData(Char, BoolLocalPlayer, Health, MaxHealth, Username, D
     if DisplayName == "_Enemy" then DisplayName = "Enemy" .. tostring(ListCounter) end
     if UserId == 10000 then UserId = 10000 + ListCounter end
 
+    local Parts = {}
+    local Body = {}
+    local Full = {}
+    local RigType = 0
+
+    if Char:FindFirstChild("UpperTorso") then
+        RigType = 1
+    end
+
+    if _G.CustomParts then
+        if _G.CustomParts.RigType == "R6" then
+            RigType = 0
+        elseif _G.CustomParts.RigType == "R15" then
+            RigType = 1
+        end
+
+        for name, part in _G.CustomParts do
+            if name ~= "RigType" then
+                Parts[name] = Char:FindFirstChild(part)
+            end
+        end
+    elseif RigType == 0 then
+        for _, part in R6Check do
+            Parts[part] = Char:FindFirstChild(part)
+        end
+    elseif RigType == 1 then
+        for _, part in R15Check do
+            Parts[part] = Char:FindFirstChild(part)
+        end
+    end
+
+    for _, part in BodyParts do
+        if Parts[part] then
+            Body[#Body + 1] = {name = part, part = Char:FindFirstChild(part)}
+        end
+    end
+
+    for _, part in FullBodyParts do
+        if Parts[part] then
+            Full[#Full + 1] = {name = part, part = Char:FindFirstChild(part)}
+        end
+    end
+
     if BoolLocalPlayer then
         LocalId = InstId(Char)
-
         local Data = {
             LocalPlayer = LocalPlayer,
             Character = Char,
@@ -69,49 +130,21 @@ local function ResolveData(Char, BoolLocalPlayer, Health, MaxHealth, Username, D
             Humanoid = Char.Humanoid,
             Health = Health,
             MaxHealth = MaxHealth,
-            RigType = Char:FindFirstChild("RightUpperArm") and 1 or 0,
+            RigType = RigType,
             Teamname = TeamName,
             Toolname = ToolName,
-            Head = Char.Head,
-            RootPart = Char.HumanoidRootPart,
-            LowerTorso = Char:FindFirstChild("LowerTorso") or Char.Torso,
-            UpperTorso = Char:FindFirstChild("UpperTorso") or Char.Torso,
-            LeftArm = Char:FindFirstChild("Left Arm") or Char.LeftUpperArm,
-            RightArm = Char:FindFirstChild("Right Arm") or Char.RightUpperArm,
-            LeftLeg = Char:FindFirstChild("Left Leg") or Char.LeftUpperLeg,
-            RightLeg = Char:FindFirstChild("Right Leg") or Char.RightUpperLeg,
-            LeftFoot = Char:FindFirstChild("LeftFoot") or Char["Left Leg"],
+            Head = Parts["Head"],
+            RootPart = Parts["HumanoidRootPart"],
+            LowerTorso = Parts["LowerTorso"] or Parts["Torso"],
+            UpperTorso = Parts["UpperTorso"] or Parts["Torso"],
+            LeftArm = Parts["Left Arm"] or Parts["LeftUpperArm"],
+            RightArm = Parts["Right Arm"] or Parts["RightUpperArm"],
+            LeftLeg = Parts["Left Leg"] or Parts["LeftUpperLeg"],
+            RightLeg = Parts["Right Leg"] or Parts["RightUpperLeg"],
+            LeftFoot = Parts["LeftFoot"] or Parts["Left Leg"],
         }
 
         return Data, InstId(Char)
-    end
-
-    local Parts = {
-        Head = Char:FindFirstChild("Head"),
-        HumanoidRootPart = Char:FindFirstChild("HumanoidRootPart"),
-        Torso = Char:FindFirstChild("Torso"),
-        UpperTorso = Char:FindFirstChild("UpperTorso"),
-        LowerTorso = Char:FindFirstChild("LowerTorso"),
-        LeftUpperArm = Char:FindFirstChild("LeftUpperArm"),
-        LeftLowerArm = Char:FindFirstChild("LeftLowerArm"),
-        LeftHand = Char:FindFirstChild("LeftHand"),
-        RightUpperArm = Char:FindFirstChild("RightUpperArm"),
-        RightLowerArm = Char:FindFirstChild("RightLowerArm"),
-        RightHand = Char:FindFirstChild("RightHand"),
-        LeftUpperLeg = Char:FindFirstChild("LeftUpperLeg"),
-        LeftLowerLeg = Char:FindFirstChild("LeftLowerLeg"),
-        LeftFoot = Char:FindFirstChild("LeftFoot"),
-        RightUpperLeg = Char:FindFirstChild("RightUpperLeg"),
-        RightLowerLeg = Char:FindFirstChild("RightLowerLeg"),
-        RightFoot = Char:FindFirstChild("RightFoot"),
-    }
-
-    local Body, Full = {}, {}
-    for _, Name in BodyParts do
-        if Parts[Name] then Body[#Body + 1] = {name = Name, part = Parts[Name]} end
-    end
-    for _, Name in FullParts do
-        if Parts[Name] then Full[#Full + 1] = {name = Name, part = Parts[Name]} end
     end
 
     local Data = {
@@ -119,35 +152,35 @@ local function ResolveData(Char, BoolLocalPlayer, Health, MaxHealth, Username, D
         Displayname = DisplayName,
         Userid = UserId,
         Character = Char,
-        PrimaryPart = Char.HumanoidRootPart,
+        PrimaryPart = Parts["HumanoidRootPart"],
         Humanoid = Char.Humanoid,
-        Head = Char.Head,
-        Torso = Char:FindFirstChild("Torso") or Char.UpperTorso,
-        LeftLeg = Char:FindFirstChild("Left Leg") or Char.LeftUpperLeg,
-        LeftArm = Char:FindFirstChild("Left Arm") or Char.LeftUpperArm,
-        RightLeg = Char:FindFirstChild("Right Leg") or Char.RightUpperLeg,
-        RightArm = Char:FindFirstChild("Right Arm") or Char.RightUpperArm,
-        LeftUpperLeg = Char:FindFirstChild("LeftUpperLeg"),
-        LeftLowerLeg = Char:FindFirstChild("LeftLowerLeg"),
-        LeftFoot = Char:FindFirstChild("LeftFoot"),
-        LeftLowerArm = Char:FindFirstChild("LeftLowerArm"),
-        LeftUpperArm = Char:FindFirstChild("LeftUpperArm"),
-        LeftHand = Char:FindFirstChild("LeftHand"),
-        RightUpperLeg = Char:FindFirstChild("RightUpperLeg"),
-        RightLowerLeg = Char:FindFirstChild("RightLowerLeg"),
-        RightFoot = Char:FindFirstChild("RightFoot"),
-        RightLowerArm = Char:FindFirstChild("RightLowerArm"),
-        RightUpperArm = Char:FindFirstChild("RightUpperArm"),
-        RightHand = Char:FindFirstChild("RightHand"),
-        UpperTorso = Char:FindFirstChild("UpperTorso"),
-        LowerTorso = Char:FindFirstChild("LowerTorso"),
+        Head = Parts["Head"],
+        Torso = Parts["Torso"] or Parts["UpperTorso"],
+        LeftLeg = Parts["Left Leg"] or Parts["LeftUpperLeg"],
+        LeftArm = Parts["Left Arm"] or Parts["LeftUpperArm"],
+        RightLeg = Parts["Right Leg"] or Parts["RightUpperLeg"],
+        RightArm = Parts["Right Arm"] or Parts["RightUpperArm"],
+        LeftUpperLeg = Parts["LeftUpperLeg"],
+        LeftLowerLeg = Parts["LeftLowerLeg"],
+        LeftFoot = Parts["LeftFoot"],
+        LeftLowerArm = Parts["LeftLowerArm"],
+        LeftUpperArm = Parts["LeftUpperArm"],
+        LeftHand = Parts["LeftHand"],
+        RightUpperLeg = Parts["RightUpperLeg"],
+        RightLowerLeg = Parts["RightLowerLeg"],
+        RightFoot = Parts["RightFoot"],
+        RightLowerArm = Parts["RightLowerArm"],
+        RightUpperArm = Parts["RightUpperArm"],
+        RightHand = Parts["RightHand"],
+        UpperTorso = Parts["UpperTorso"],
+        LowerTorso = Parts["LowerTorso"],
         BodyHeightScale = 1,
-        RigType = Char:FindFirstChild("RightUpperArm") and 1 or 0,
+        RigType = RigType,
         Whitelisted = false,
         Archenemies = false,
-        Aimbot_Part = Char.Head,
-        Aimbot_TP_Part = Char.Head,
-        Triggerbot_Part = Char.Head,
+        Aimbot_Part = Char["Head"],
+        Aimbot_TP_Part = Char["Head"],
+        Triggerbot_Part = Char["Head"],
         Health = Health,
         MaxHealth = MaxHealth,
         Toolname = ToolName,
@@ -219,10 +252,10 @@ task.spawn(function()
                     _G.ESPHealths[InstID] = Data["Health"]
 
                     if Data["PrimaryPart"] then
-                        print("Added: " .. Data["Username"])
+                        print("Added: " .. Data["Username"] .. ", " .. tostring(Data["RigType"]))
                         add_model_data(Data, InstID)
                     else
-                        print("Added local: " .. Data["Username"])
+                        print("Added local: " .. Data["Username"] .. ", " .. tostring(Data["RigType"]))
                         override_local_data(Data)
                     end
                 elseif ActionType == "Remove" then
