@@ -13,7 +13,28 @@ Includes 3 functions:
 1. `AddPlayer(CharacterInstance: instance, IsLocalPlayer: bool, Health: number, MaxHealth: number, Username: string, Displayname: string, UserId: number, TeamName: string, ToolName: string)`  
 2. `RemovePlayer(ID: string)`  
 3. `EditHealth(ID: string, Health: number)`
-4. Also uses 3 global values: Read-only: `_G.ESPList`, `_G.ESPHealths` | Needs to be declared: `_G.WaitTime`
+4. Also uses 3 global values: Read-only: `_G.ESPList`, `_G.ESPHealths` | Can be declared: `_G.WaitTime`, `_G.CustomParts`
+
+`_G.CustomParts` Syntax:
+```lua
+-- R6:
+{
+  RigType = "R6",
+  HumanoidRootPart = "HumanoidRootPart", -- Name of root instance
+  Head = "Head" -- Name of head
+  Torso = "Torso" -- Name of torso
+  RightArm = "Right Arm" -- Name of right arm
+  -- ... other body parts
+}
+-- R15:
+{
+  RigType = "R15",
+  HumanoidRootPart = "HumanoidRootPart", -- Name of root instance
+  Head = "Head" -- Name of head
+  UpperTorso = "UpperTorso" -- Name of upper torso
+  -- ... other body parts
+}
+```
   
 Example for ESP.lua on the game Notoriety:  
 ```lua
