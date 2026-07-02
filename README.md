@@ -48,17 +48,12 @@ local function PostLocal()
         end
     end
 
-    if not workspace:FindFirstChild("Police") then return end   
-    if type(workspace.Police:GetChildren()) ~= "table" then return end
-
     for _, inst in workspace.Police:GetChildren() do
         if not inst or not inst.Parent then continue end
         if not inst:FindFirstChild("Health") then continue end
 
         ESP.AddPlayer(inst, false, inst.Health.Value, inst.Health:GetAttribute("MaxHealth"))
     end
-
-    if type(Players:GetChildren()) ~= "table" then return end
 
     for _, inst in Players:GetChildren() do
         if not inst or not inst.Parent then continue end
