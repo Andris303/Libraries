@@ -17,7 +17,7 @@ Includes 3 functions:
   
 Example for ESP.lua on the game Notoriety:  
 ```lua
-local ESP = loadstring(game:HttpGet(https://raw.githubusercontent.com/Andris303/Libraries/refs/heads/main/ESP.lua))()
+local ESP = loadstring(game:HttpGet("https://raw.githubusercontent.com/Andris303/Libraries/refs/heads/main/ESP.lua"))()
 
 local function PostLocal()
     if type(workspace:GetChildren()) ~= "table" then return end
