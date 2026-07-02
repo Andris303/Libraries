@@ -19,6 +19,11 @@ Example for ESP.lua on the game Notoriety:
 ```lua
 local ESP = loadstring(game:HttpGet("https://raw.githubusercontent.com/Andris303/Libraries/refs/heads/main/ESP.lua"))()
 
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local Camera = workspace.CurrentCamera
+local RunService = game:GetService("RunService")
+
 local function PostLocal()
     if type(workspace:GetChildren()) ~= "table" then return end
     if type(Players:GetChildren()) ~= "table" then return end
