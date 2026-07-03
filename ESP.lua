@@ -119,7 +119,7 @@ local function ResolveData(Char, BoolLocalPlayer, Health, MaxHealth, Username, D
         end
     end
 
-    local Humanoid = inst:FindFirstChildOfClass("Humanoid")
+    local Humanoid = Char:FindFirstChildOfClass("Humanoid")
 
     if BoolLocalPlayer then
         LocalId = InstId(Char)
