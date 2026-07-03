@@ -37,7 +37,7 @@ end
 local function CheckValidity(inst)
     if not inst or not inst.Parent then return false end
 
-    if not inst:FindFirstChild("Humanoid") or not inst:FindFirstChild("HumanoidRootPart") then
+    if not inst:FindFirstChildOfClass("Humanoid") or not inst:FindFirstChild("HumanoidRootPart") then
         return false
     end
 
@@ -119,6 +119,8 @@ local function ResolveData(Char, BoolLocalPlayer, Health, MaxHealth, Username, D
         end
     end
 
+    local Humanoid = inst:FindFirstChildOfClass("Humanoid")
+
     if BoolLocalPlayer then
         LocalId = InstId(Char)
         local Data = {
@@ -127,7 +129,7 @@ local function ResolveData(Char, BoolLocalPlayer, Health, MaxHealth, Username, D
             Username = Username,
             Displayname = DisplayName,
             Userid = UserId,
-            Humanoid = Char.Humanoid,
+            Humanoid = Humanoid,
             Health = Health,
             MaxHealth = MaxHealth,
             RigType = RigType,
@@ -153,7 +155,7 @@ local function ResolveData(Char, BoolLocalPlayer, Health, MaxHealth, Username, D
         Userid = UserId,
         Character = Char,
         PrimaryPart = Parts["HumanoidRootPart"],
-        Humanoid = Char.Humanoid,
+        Humanoid = Humanoid,
         Head = Parts["Head"],
         Torso = Parts["Torso"] or Parts["UpperTorso"],
         LeftLeg = Parts["Left Leg"] or Parts["LeftUpperLeg"],
