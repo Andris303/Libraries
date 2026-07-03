@@ -209,7 +209,9 @@ local function AddPlayer(Char, BoolLocalPlayer, Health, MaxHealth, Username, Dis
     if BoolLocalPlayer and TeamName == "_Enemies" then TeamName = "LocalPlayer" end
     if TeamName == "_Enemies" then TeamName = "Enemies" end
 
-    ESPQueue[InstId(Char)] = {{Char, BoolLocalPlayer, Health, MaxHealth, Username, DisplayName, UserId, TeamName, ToolName}, "Add"}
+    if InstId(Char) then
+        ESPQueue[InstId(Char)] = {{Char, BoolLocalPlayer, Health, MaxHealth, Username, DisplayName, UserId, TeamName, ToolName}, "Add"}
+    end
 end
 
 local function RemovePlayer(ID)
