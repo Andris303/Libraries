@@ -143,7 +143,7 @@ local function ResolveData(Char, BoolLocalPlayer, Health, MaxHealth, Username, D
             RightArm = Parts["Right Arm"] or Parts["RightUpperArm"],
             LeftLeg = Parts["Left Leg"] or Parts["LeftUpperLeg"],
             RightLeg = Parts["Right Leg"] or Parts["RightUpperLeg"],
-            LeftFoot = Parts["LeftFoot"] or Parts["Left Leg"],
+            LeftFoot = Parts["LeftFoot"] or Parts["Left Leg"] or Parts["LeftLeg"],
         }
 
         return Data, InstId(Char)
