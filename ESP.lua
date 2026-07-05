@@ -197,7 +197,7 @@ local function ResolveData(Char, BoolLocalPlayer, Health, MaxHealth, Username, D
 end
 
 local function AddPlayer(Char, BoolLocalPlayer, Health, MaxHealth, Username, DisplayName, UserId, TeamName, ToolName, NoHuman)
-    if not CheckValidity(Char) then return nil end
+    if not CheckValidity(Char, NoHuman) then return nil end
     local ID = InstId(Char)
     if ESPQueue[ID] then return nil end
     if _G.ESPList[ID] then return nil end
