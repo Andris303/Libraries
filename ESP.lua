@@ -97,7 +97,6 @@ local function ResolveData(Char, BoolLocalPlayer, Health, MaxHealth, Username, D
 
         for name, part in _G.CustomParts do
             if name ~= "RigType" then
-                print(name, part)
                 Parts[name] = Char:FindFirstChild(part)
             end
         end
@@ -114,18 +113,12 @@ local function ResolveData(Char, BoolLocalPlayer, Health, MaxHealth, Username, D
     for _, part in BodyParts do
         if Parts[part] then
             Body[#Body + 1] = {name = part, part = Parts[part]}
-            if Char:FindFirstChild(part) then
-                print(part, Char:FindFirstChild(part).Name)
-            end
         end
     end
 
     for _, part in FullBodyParts do
         if Parts[part] then
             Full[#Full + 1] = {name = part, part = Parts[part]}
-            if Char:FindFirstChild(part) then
-                print(part, Char:FindFirstChild(part).Name)
-            end
         end
     end
 
