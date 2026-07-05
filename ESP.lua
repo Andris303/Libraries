@@ -34,11 +34,13 @@ local function InstId(inst)
     return tostring(tonumber(inst.Data))
 end
 
-local function CheckValidity(inst)
+local function CheckValidity(inst, NoHuman)
     if not inst or not inst.Parent then return false end
 
     if not inst:FindFirstChildOfClass("Humanoid") or not inst:FindFirstChild("HumanoidRootPart") then
-        return false
+        if not NoHuman then
+            return false
+        end
     end
 
     if _G.CustomParts then
@@ -194,7 +196,7 @@ local function ResolveData(Char, BoolLocalPlayer, Health, MaxHealth, Username, D
     return Data, InstId(Char)
 end
 
-local function AddPlayer(Char, BoolLocalPlayer, Health, MaxHealth, Username, DisplayName, UserId, TeamName, ToolName)
+local function AddPlayer(Char, BoolLocalPlayer, Health, MaxHealth, Username, DisplayName, UserId, TeamName, ToolName, NoHuman)
     if not CheckValidity(Char) then return nil end
     local ID = InstId(Char)
     if ESPQueue[ID] then return nil end
@@ -212,7 +214,7 @@ local function AddPlayer(Char, BoolLocalPlayer, Health, MaxHealth, Username, Dis
     if TeamName == "_Enemies" then TeamName = "Enemies" end
 
     if InstId(Char) then
-        ESPQueue[InstId(Char)] = {{Char, BoolLocalPlayer, Health, MaxHealth, Username, DisplayName, UserId, TeamName, ToolName}, "Add"}
+        ESPQueue[InstId(Char)] = {{Char, BoolLocalPlayer, Health, MaxHealth, Username, DisplayName, UserId, TeamName, ToolName, NoHuman}, "Add"}
     end
 end
 
@@ -249,7 +251,7 @@ task.spawn(function()
                     task.wait(WaitTime)
                     ESPQueue[ID] = nil
 
-                    local Data, InstID = ResolveData(Table[1], Table[2], Table[3], Table[4], Table[5], Table[6], Table[7], Table[8], Table[9])
+                    local Data, InstID = ResolveData(Table[1], Table[2], Table[3], Table[4], Table[5], Table[6], Table[7], Table[8], Table[9], Table[10])
                     if not Data or not InstID then continue end
 
                     _G.ESPList[InstID] = Data["Character"]
