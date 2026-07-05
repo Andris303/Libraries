@@ -68,10 +68,10 @@ local function CheckValidity(inst, NoHuman)
     return true
 end
 
-local function ResolveData(Char, BoolLocalPlayer, Health, MaxHealth, Username, DisplayName, UserId, TeamName, ToolName)
+local function ResolveData(Char, BoolLocalPlayer, Health, MaxHealth, Username, DisplayName, UserId, TeamName, ToolName, NoHuman)
     if ESPQueue[InstId(Char)] then return nil end
     if _G.ESPList[InstId(Char)] then return nil end
-    if not CheckValidity(Char) then return nil end
+    if not CheckValidity(Char, NoHuman) then return nil end
 
     ListCounter += 1
     if Username == "_Enemy" then Username = "Enemy" .. tostring(ListCounter) end
@@ -210,6 +210,7 @@ local function AddPlayer(Char, BoolLocalPlayer, Health, MaxHealth, Username, Dis
     local UserId = UserId or 10000
     local ToolName = ToolName or "Gun"
     local TeamName = TeamName or "_Enemies"
+    local NoHuman = NoHuman or false
     if BoolLocalPlayer and TeamName == "_Enemies" then TeamName = "LocalPlayer" end
     if TeamName == "_Enemies" then TeamName = "Enemies" end
 
