@@ -2,6 +2,7 @@ local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
 local RunService = game:GetService("RunService")
+local Timer = 0
 local BodyParts = {"LowerTorso", "LeftLowerLeg", "LeftUpperLeg", "RightLowerLeg", "RightUpperLeg", "LeftLowerArm", "LeftUpperArm", "RightLowerArm", "RightUpperArm", "LeftHand", "RightHand"}
 local FullBodyParts = {"Head", "Torso", "UpperTorso", "LowerTorso", "HumanoidRootPart", "LeftUpperArm", "LeftLowerArm", "LeftHand", "RightUpperArm", "RightLowerArm", "RightHand", "LeftUpperLeg", "LeftLowerLeg", "LeftFoot", "RightUpperLeg", "RightLowerLeg", "RightFoot"}
 local R6Check = {"Head", "HumanoidRootPart", "Torso", "Right Arm", "Right Leg", "Left Arm", "Left Leg"}
@@ -96,6 +97,7 @@ local function ResolveData(Char, BoolLocalPlayer, Health, MaxHealth, Username, D
 
         for name, part in _G.CustomParts do
             if name ~= "RigType" then
+                print(name, part)
                 Parts[name] = Char:FindFirstChild(part)
             end
         end
@@ -111,13 +113,19 @@ local function ResolveData(Char, BoolLocalPlayer, Health, MaxHealth, Username, D
 
     for _, part in BodyParts do
         if Parts[part] then
-            Body[#Body + 1] = {name = part, part = Char:FindFirstChild(part)}
+            Body[#Body + 1] = {name = part, part = Parts[part]}
+            if Char:FindFirstChild(part) then
+                print(part, Char:FindFirstChild(part).Name)
+            end
         end
     end
 
     for _, part in FullBodyParts do
         if Parts[part] then
-            Full[#Full + 1] = {name = part, part = Char:FindFirstChild(part)}
+            Full[#Full + 1] = {name = part, part = Parts[part]}
+            if Char:FindFirstChild(part) then
+                print(part, Char:FindFirstChild(part).Name)
+            end
         end
     end
 
