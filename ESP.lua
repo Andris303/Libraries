@@ -277,11 +277,13 @@ task.spawn(function()
                     local InstID = Table[1]
                     if not InstID then continue end
 
-                    print("Removed: " .. InstID)
-                    _G.ESPList[InstID] = nil
-                    _G.ESPHealths[InstID] = nil
-                    _G.ESPData[InstID] = nil
-                    remove_model_data(InstID)
+                    if _G.ESPList[InstID] then
+                        print("Removed: " .. InstID)
+                        _G.ESPList[InstID] = nil
+                        _G.ESPHealths[InstID] = nil
+                        _G.ESPData[InstID] = nil
+                        remove_model_data(InstID)
+                    end
                 elseif ActionType == "Edit" then
                     task.wait(WaitTime)
                     ESPQueue[ID] = nil
