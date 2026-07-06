@@ -26,6 +26,7 @@ _G.CustomParts = {
 
 _G.ESPList = {}
 _G.ESPHealths = {}
+_G.ESPData = {}
 --_G.WaitTime = .01
 
 local WaitTime = _G.WaitTime or .01
@@ -258,6 +259,7 @@ task.spawn(function()
 
                     _G.ESPList[InstID] = Data["Character"]
                     _G.ESPHealths[InstID] = Data["Health"]
+                    _G.ESPData[InstID] = Data
 
                     if Data["PrimaryPart"] then
                         print("Added: " .. Data["Username"] .. ", " .. tostring(Data["RigType"]))
@@ -276,6 +278,7 @@ task.spawn(function()
                     print("Removed: " .. InstID)
                     _G.ESPList[InstID] = nil
                     _G.ESPHealths[InstID] = nil
+                    _G.ESPData[InstID] = nil
                     remove_model_data(InstID)
                 elseif ActionType == "Edit" then
                     task.wait(WaitTime)
@@ -286,6 +289,7 @@ task.spawn(function()
                     if not InstID or not Health then continue end
 
                     _G.ESPHealths[InstID] = Health
+                    _G.ESPData[InstID]["Health"] = Health
                     edit_model_data({Health = Health}, InstID)
                 end
             end
