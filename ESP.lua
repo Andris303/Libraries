@@ -126,6 +126,8 @@ local function ResolveData(Char, BoolLocalPlayer, Health, MaxHealth, Username, D
     local Humanoid = Char:FindFirstChildOfClass("Humanoid")
 
     if BoolLocalPlayer then
+        if not LocalPlayer.Character then return nil end
+        if not LocalPlayer.Character:FindFirstChild("Humanoid") then return nil end
         LocalId = InstId(Char)
         local Data = {
             LocalPlayer = LocalPlayer,
@@ -133,7 +135,7 @@ local function ResolveData(Char, BoolLocalPlayer, Health, MaxHealth, Username, D
             Username = Username,
             Displayname = DisplayName,
             Userid = UserId,
-            Humanoid = Humanoid,
+            Humanoid = LocalPlayer.Character.Humanoid,
             Health = Health,
             MaxHealth = MaxHealth,
             RigType = RigType,
