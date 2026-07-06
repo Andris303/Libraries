@@ -135,7 +135,7 @@ local function ResolveData(Char, BoolLocalPlayer, Health, MaxHealth, Username, D
             Username = Username,
             Displayname = DisplayName,
             Userid = UserId,
-            Humanoid = LocalPlayer.Character.Humanoid,
+            Humanoid = Humanoid or LocalPlayer.Character.Humanoid,
             Health = Health,
             MaxHealth = MaxHealth,
             RigType = RigType,
