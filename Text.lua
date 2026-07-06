@@ -4,13 +4,15 @@ local TextC = 0
 local Texts = {}
 local TextIds = {}
 local Camera = workspace.CurrentCamera
+local TextYThing = _G.PixelOffset or 25
+local BOutline = _G.Outline or false
 
 local test = Drawing.new("Text")
 test.Text = "XYZ"
 test.Size = 20
 test.Font = 0
 TextOffset = test.TextBounds.Y
-TextYVal = Camera.ViewportSize.Y - 25
+TextYVal = Camera.ViewportSize.Y - TextYThing
 test:Remove()
 
 local function Add(id, text, color)
@@ -26,6 +28,7 @@ local function Add(id, text, color)
     Texts[id].Font = 0
     Texts[id].Position = Vector2.new(25, TextYVal)
     Texts[id].Color = color
+    Texts[id].Outline = BOutline
     Texts[id].Visible = true
 end
 
