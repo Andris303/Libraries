@@ -2,7 +2,6 @@ local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
 local RunService = game:GetService("RunService")
-local Timer = 0
 local BodyParts = {"LowerTorso", "LeftLowerLeg", "LeftUpperLeg", "RightLowerLeg", "RightUpperLeg", "LeftLowerArm", "LeftUpperArm", "RightLowerArm", "RightUpperArm", "LeftHand", "RightHand"}
 local FullBodyParts = {"Head", "Torso", "UpperTorso", "LowerTorso", "HumanoidRootPart", "LeftUpperArm", "LeftLowerArm", "LeftHand", "RightUpperArm", "RightLowerArm", "RightHand", "LeftUpperLeg", "LeftLowerLeg", "LeftFoot", "RightUpperLeg", "RightLowerLeg", "RightFoot"}
 local R6Check = {"Head", "HumanoidRootPart", "Torso", "Right Arm", "Right Leg", "Left Arm", "Left Leg"}
@@ -70,7 +69,7 @@ local function CheckValidity(inst, NoHuman)
     return true
 end
 
-local function ResolveData(Char, BoolLocalPlayer, Health, MaxHealth, Username, DisplayName, UserId, TeamName, ToolName, NoHuman)
+local function ResolveData(Char, BoolLocalPlayer, Health, MaxHealth, Username, DisplayName, UserId, TeamName, ToolName, NoHuman, Humanoid)
     if ESPQueue[InstId(Char)] then return nil end
     if _G.ESPList[InstId(Char)] then return nil end
     if not CheckValidity(Char, NoHuman) then return nil end
@@ -79,6 +78,12 @@ local function ResolveData(Char, BoolLocalPlayer, Health, MaxHealth, Username, D
     if Username == "_Enemy" then Username = "Enemy" .. tostring(ListCounter) end
     if DisplayName == "_Enemy" then DisplayName = "Enemy" .. tostring(ListCounter) end
     if UserId == 10000 then UserId = 10000 + ListCounter end
+    local Human
+    if Humanoid then
+        Human = Humanoid
+    else
+        Human = Char:FindFirstChildOfClass("Humanoid")
+    end
 
     local Parts = {}
     local Body = {}
@@ -123,11 +128,9 @@ local function ResolveData(Char, BoolLocalPlayer, Health, MaxHealth, Username, D
         end
     end
 
-    local Humanoid = Char:FindFirstChildOfClass("Humanoid")
-
     if BoolLocalPlayer then
         if not LocalPlayer.Character then return nil end
-        if not LocalPlayer.Character:FindFirstChild("Humanoid") then return nil end
+        if not LocalPlayer.Character:FindFirstChild("Humanoid") and not Human then return nil end
         LocalId = InstId(Char)
         local Data = {
             LocalPlayer = LocalPlayer,
@@ -135,7 +138,7 @@ local function ResolveData(Char, BoolLocalPlayer, Health, MaxHealth, Username, D
             Username = Username,
             Displayname = DisplayName,
             Userid = UserId,
-            Humanoid = Humanoid or LocalPlayer.Character.Humanoid,
+            Humanoid = Human or LocalPlayer.Character.Humanoid,
             Health = Health,
             MaxHealth = MaxHealth,
             RigType = RigType,
@@ -161,7 +164,7 @@ local function ResolveData(Char, BoolLocalPlayer, Health, MaxHealth, Username, D
         Userid = UserId,
         Character = Char,
         PrimaryPart = Parts["HumanoidRootPart"],
-        Humanoid = Humanoid,
+        Humanoid = Human,
         Head = Parts["Head"],
         Torso = Parts["Torso"] or Parts["UpperTorso"],
         LeftLeg = Parts["Left Leg"] or Parts["LeftLeg"] or Parts["LeftUpperLeg"],
@@ -200,7 +203,7 @@ local function ResolveData(Char, BoolLocalPlayer, Health, MaxHealth, Username, D
     return Data, InstId(Char)
 end
 
-local function AddPlayer(Char, BoolLocalPlayer, Health, MaxHealth, Username, DisplayName, UserId, TeamName, ToolName, NoHuman)
+local function AddPlayer(Char, BoolLocalPlayer, Health, MaxHealth, Username, DisplayName, UserId, TeamName, ToolName, NoHuman, Humanoid)
     if not CheckValidity(Char, NoHuman) then return nil end
     local ID = InstId(Char)
     if ESPQueue[ID] then return nil end
@@ -215,11 +218,13 @@ local function AddPlayer(Char, BoolLocalPlayer, Health, MaxHealth, Username, Dis
     local ToolName = ToolName or "Gun"
     local TeamName = TeamName or "_Enemies"
     local NoHuman = NoHuman or false
+    local Humanoid = Humanoid or nil
     if BoolLocalPlayer and TeamName == "_Enemies" then TeamName = "LocalPlayer" end
     if TeamName == "_Enemies" then TeamName = "Enemies" end
 
     if InstId(Char) then
-        ESPQueue[InstId(Char)] = {{Char, BoolLocalPlayer, Health, MaxHealth, Username, DisplayName, UserId, TeamName, ToolName, NoHuman}, "Add"}
+		print("Added to queue")
+        ESPQueue[InstId(Char)] = {{Char, BoolLocalPlayer, Health, MaxHealth, Username, DisplayName, UserId, TeamName, ToolName, NoHuman, Humanoid}, "Add"}
     end
 end
 
@@ -256,7 +261,7 @@ task.spawn(function()
                     task.wait(WaitTime)
                     ESPQueue[ID] = nil
 
-                    local Data, InstID = ResolveData(Table[1], Table[2], Table[3], Table[4], Table[5], Table[6], Table[7], Table[8], Table[9], Table[10])
+                    local Data, InstID = ResolveData(Table[1], Table[2], Table[3], Table[4], Table[5], Table[6], Table[7], Table[8], Table[9], Table[10], Table[11])
                     if not Data or not InstID then continue end
 
                     _G.ESPList[InstID] = Data["Character"]
