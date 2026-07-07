@@ -223,7 +223,6 @@ local function AddPlayer(Char, BoolLocalPlayer, Health, MaxHealth, Username, Dis
     if TeamName == "_Enemies" then TeamName = "Enemies" end
 
     if InstId(Char) then
-		print("Added to queue")
         ESPQueue[InstId(Char)] = {{Char, BoolLocalPlayer, Health, MaxHealth, Username, DisplayName, UserId, TeamName, ToolName, NoHuman, Humanoid}, "Add"}
     end
 end
