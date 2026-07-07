@@ -282,7 +282,7 @@ task.spawn(function()
                     if not InstID then continue end
 
                     if _G.ESPList[InstID] then
-                        print("Removed: " .. InstID)
+                        print("Removed: " .. _G.ESPData[InstID].Username)
                         _G.ESPList[InstID] = nil
                         _G.ESPHealths[InstID] = nil
                         _G.ESPData[InstID] = nil
