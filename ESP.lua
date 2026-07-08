@@ -164,7 +164,7 @@ local function ResolveData(Char, BoolLocalPlayer, Health, MaxHealth, Username, D
         Userid = UserId,
         Character = Char,
         PrimaryPart = Parts["HumanoidRootPart"],
-        Humanoid = Human,
+        --Humanoid = Human,
         Head = Parts["Head"],
         Torso = Parts["Torso"] or Parts["UpperTorso"],
         LeftLeg = Parts["Left Leg"] or Parts["LeftLeg"] or Parts["LeftUpperLeg"],
