@@ -489,13 +489,6 @@ function severeui:createwindow(options)
         State["Target_"..name] = value
     end
 
-    function windowObj:registerkey(name, default)
-        if State[name] == nil then
-            State[name] = default
-        end
-        RegisterKey(name)
-    end
-
     function windowObj:createtab(name)
         for _, existingTab in ipairs(Tabs) do
             if existingTab == name then return name end
@@ -541,6 +534,13 @@ function severeui:createwindow(options)
         local isConfigAdded = false
         for _, v in ipairs(ConfigKeys) do if v == name then isConfigAdded = true break end end
         if not isConfigAdded then table.insert(ConfigKeys, name) end
+    end
+
+    function windowObj:registerkey(name, default)
+        if State[name] == nil then
+            State[name] = default
+        end
+        RegisterKey(name)
     end
 
     function windowObj:createtoggle(tabName, o)
