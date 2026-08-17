@@ -103,6 +103,8 @@ function severeui:createwindow(options)
         AccentCol = true, MainCol = true, SnowCol = true
     }
 
+    local ColorDefaults = {}
+
     local CustomPopups = {}
     local CustomPopupTexts = {}
     local ColorPicker = { Target = nil, Color = Color3.new(1,1,1), H = 0, S = 0, V = 1, Alpha = 1 }
@@ -267,7 +269,8 @@ function severeui:createwindow(options)
     end
 
     local function SaveConfig(name)
-        State.MenuSizeX = MenuSize.X; State.MenuSizeY = MenuSize.Y
+        State.MenuSizeX = MenuSize.X
+        State.MenuSizeY = MenuSize.Y
         local saveData = {}
         for _, k in ipairs(ConfigKeys) do
             local v = State[k]
@@ -276,17 +279,25 @@ function severeui:createwindow(options)
             elseif type(v) == "number" then
                 saveData[k] = tostring(v)
             elseif type(v) == "boolean" then
-                saveData[k] = (v and "true" or "false")
+                saveData[k] = v and "true" or "false"
             elseif type(v) == "string" or type(v) == "table" then
                 saveData[k] = v
             end
         end
-        if not isfolder(ConfigFolderName) then makefolder(ConfigFolderName) end
+        if not isfolder(ConfigFolderName) then
+            makefolder(ConfigFolderName)
+        end
         local encoded = SafeEncode(saveData)
         if encoded ~= "" then
-            pcall(function() writefile(ConfigFolderName .. "/" .. name .. ".json", encoded) end)
-            if ConfigDropdown then ConfigDropdown.Options = GetConfigs() end
-            if DefaultConfigDropdown then DefaultConfigDropdown.Options = GetDefaultConfigs() end
+            pcall(function()
+                writefile(ConfigFolderName .. "/" .. name .. ".json", encoded)
+            end)
+            if ConfigDropdown then
+                ConfigDropdown.Options = GetConfigs()
+            end
+            if DefaultConfigDropdown then
+                DefaultConfigDropdown.Options = GetDefaultConfigs()
+            end
             State.SelectedConfig = name
         end
     end
@@ -303,7 +314,7 @@ function severeui:createwindow(options)
         local path = ConfigFolderName .. "/" .. name .. ".json"
         local fallbackPath = ConfigFolderName .. "/" .. name .. ".txt"
         local finalPath = isfile(path) and path or (isfile(fallbackPath) and fallbackPath or nil)
-        
+
         if finalPath then
             local s, content = pcall(readfile, finalPath)
             if not s then return end
@@ -416,21 +427,36 @@ function severeui:createwindow(options)
 
     local function ResetToDefault(target)
         if not target then return end
-        local def = Color3.new(1,1,1)
-        if target == "MainCol" then def = Theme.BgBase
-        elseif target == "AccentCol" then def = Theme.Accent
+        local def = ColorDefaults[target]
+        if not def then
+            if target == "MainCol" then
+                def = Theme.BgBase
+            elseif target == "AccentCol" then
+                def = Theme.Accent
+            elseif target == "SnowCol" then
+                def = Color3.new(1,1,1)
+            else
+                def = Color3.new(1,1,1)
+            end
         end
         ColorPicker.Color = def
         ColorPicker.H, ColorPicker.S, ColorPicker.V = def:ToHSV()
         InputBuffers.Hex = toHex(def):gsub("#","")
+        State[target] = def
+        State["Target_" .. target] = def
     end
 
     local function UpdateColorFromHSV()
         ColorPicker.Color = Color3.fromHSV(ColorPicker.H, ColorPicker.S, ColorPicker.V)
+
         if ColorPicker.Target then
             State[ColorPicker.Target] = ColorPicker.Color
+            State["Target_" .. ColorPicker.Target] = ColorPicker.Color
+
             local aKey = GetAlphaKey(ColorPicker.Target)
-            if aKey then State[aKey] = ColorPicker.Alpha end
+            if aKey then
+                State[aKey] = ColorPicker.Alpha
+            end
         end
     end
 
@@ -548,7 +574,7 @@ function severeui:createwindow(options)
         local t = CreateText(o.Name, 13, false, Theme.TextMain, 6)
         local togBg = CreateSquare(true, Theme.AccentOff, 1, 6, 24)
         local togKnob = CreateSquare(true, Theme.TextSub, 1, 7, 16)
-        
+
         local stateKey = o.StateKey or o.Name
         if State[stateKey] == nil then
             if o.Default ~= nil then State[stateKey] = o.Default else State[stateKey] = false end
@@ -557,7 +583,7 @@ function severeui:createwindow(options)
         if State[stateKey] == true and o.Callback then
             task.spawn(function() o.Callback(true) end)
         end
-        
+
         RegisterKey(stateKey)
 
         local setBtn, setTxt
@@ -582,13 +608,13 @@ function severeui:createwindow(options)
         local fFill = CreateSquare(true, Theme.Accent, 1, 7, 8)
         local t = CreateText(o.Name, 13, false, Theme.TextMain, 6)
         local valBg = CreateSquare(true, Theme.BgBase, 1, 6, 12)
-        
+
         local stateKey = o.StateKey or o.Name
         if State[stateKey] == nil then
             if o.Default ~= nil then State[stateKey] = o.Default else State[stateKey] = o.Min or 0 end
         end
         local valTxt = CreateText(tostring(State[stateKey]), 13, true, Theme.TextMain, 7)
-        
+
         RegisterKey(stateKey)
 
         local setBtn, setTxt
@@ -608,7 +634,7 @@ function severeui:createwindow(options)
     function windowObj:createbutton(tabName, o)
         local bg = CreateSquare(true, Theme.PanelBg, 1, 5, 16)
         local t = CreateText(o.Name, 13, true, Theme.TextMain, 6)
-        
+
         local el = { Bg = bg, Txt = t, Tab = (not o.Popup) and tabName or nil, Popup = o.Popup, Col = o.Col or 1, Type = "Button", BaseText = o.Name, Callback = o.Callback, IsInput = o.IsInput, InputKey = o.InputKey, HoverAnim = 0, DisabledAnim = 0, Half = o.Half, SameRow = o.SameRow, CustomWidth = o.CustomWidth, CustomOffset = o.CustomOffset }
         table.insert(Elements, el)
         return el
@@ -622,7 +648,7 @@ function severeui:createwindow(options)
         end
         local t = CreateText(o.Name .. ": " .. tostring(State[stateKey]), 13, false, Theme.TextMain, 6)
         local icon = CreateText("▼", 13, true, Theme.TextSub, 6)
-        
+
         RegisterKey(stateKey)
 
         local setBtn, setTxt
@@ -638,10 +664,11 @@ function severeui:createwindow(options)
 
     function windowObj:createcolorpicker(tabName, o)
         local stateKey = o.StateKey or o.Name
+        ColorDefaults[stateKey] = o.Default or Color3.new(1,1,1)
         if State[stateKey] == nil then
             if o.Default ~= nil then State[stateKey] = o.Default else State[stateKey] = Color3.new(1,1,1) end
         end
-        
+
         local isConfigAdded = false
         for _, v in ipairs(ConfigKeys) do if v == stateKey then isConfigAdded = true break end end
         if not isConfigAdded then 
@@ -670,6 +697,18 @@ function severeui:createwindow(options)
                 InputBuffers.Hex = toHex(State[stateKey]):gsub("#","")
             end
         })
+
+        local indicator = CreateSquare(
+            true,
+            State[stateKey],
+            1,
+            7,
+            100
+        )
+
+        el.ColorIndicator = indicator
+        el.ColorStateKey = stateKey
+
         return el
     end
 
@@ -794,14 +833,14 @@ function severeui:createwindow(options)
         local returnDown = false
         local escDown = false
         local leftDown = false
-        
+
         pcall(function() slashDown = UIS:IsKeyDown(Enum.KeyCode.Slash) end)
         pcall(function() returnDown = UIS:IsKeyDown(Enum.KeyCode.Return) or UIS:IsKeyDown(Enum.KeyCode.KeypadEnter) end)
         pcall(function() escDown = UIS:IsKeyDown(Enum.KeyCode.Escape) end)
-        
+
         if slashDown and not wasSlashDown then HeuristicTyping = true end
         if (returnDown and not wasReturnDown) or (escDown and not wasEscDown) then HeuristicTyping = false end
-        
+
         wasSlashDown = slashDown
         wasReturnDown = returnDown
         wasEscDown = escDown
@@ -846,7 +885,7 @@ function severeui:createwindow(options)
             local now = os.clock()
             local dt = math.min(now - lastUpdate, 0.05)
             lastUpdate = now
-            
+
             local rawMPos = UIS:GetMouseLocation()
             local mPos = Vector2.new(rawMPos.X * State.DPIScale, rawMPos.Y * State.DPIScale)
             local lDown = (type(isleftpressed) == "function" and isleftpressed() and (type(isrbxactive) ~= "function" or isrbxactive())) or false
@@ -995,7 +1034,7 @@ function severeui:createwindow(options)
                     elseif lastPressed == "NumberSign" then char = "#" 
                     elseif lastPressed:match("^Number(%d)$") then char = lastPressed:sub(7,7) 
                     elseif lastPressed:match("^Keypad(%d)$") then char = lastPressed:sub(7,7) end
-                    
+
                     if isNew or now > RepeatTimer then
                         if not isNew then RepeatTimer = now + 0.05 end
                         if lastPressed == "Enter" and isNew then Apply()
@@ -1184,7 +1223,7 @@ function severeui:createwindow(options)
                 for i, tab in ipairs(TabDrawings) do
                     totalTabWidth = totalTabWidth + tabW + (i < #TabDrawings and 5 or 0)
                 end
-                
+
                 local tabX = MenuPos.X + (minMenuSizeX - totalTabWidth) / 2
                 if options.TabAlignment == "Left" then
                     tabX = MenuPos.X + 15
@@ -1252,7 +1291,7 @@ function severeui:createwindow(options)
                 local startX = MenuPos.X + 15; local startY = MenuPos.Y + 70
                 local eY = { [1] = { startY, startY } }
                 local colW = (minMenuSizeX - 45) / 2
-                
+
                 local pStartX = 15; local pStartY = 45
                 local pColW = pW - 30
                 local pEY = { [1] = { pStartY, pStartY } }
@@ -1272,7 +1311,7 @@ function severeui:createwindow(options)
                         local cX = (el.Col == 1) and startX or (startX + colW + 15)
                         currentWidth = colW
                         local baseCX = cX
-                        
+
                         if el.CustomWidth then
                             currentWidth = math.floor(colW * el.CustomWidth)
                             if el.CustomOffset then baseCX = cX + math.floor(colW * el.CustomOffset) end
@@ -1282,7 +1321,7 @@ function severeui:createwindow(options)
                             currentWidth = math.floor((colW / 2) - 2.5)
                             baseCX = cX + math.floor((colW / 2) + 2.5)
                         end
-                        
+
                         local elHeight = 0
                         if el.Type == "Toggle" then elHeight = 30
                         elseif el.Type == "Slider" then elHeight = 40
@@ -1295,20 +1334,20 @@ function severeui:createwindow(options)
                         local scrollOffset = State.ScrollOffsets[State.CurrentTab] or 0
                         local elTop = cY - scrollOffset
                         local elBottom = elTop + elHeight
-                        
+
                         local unscaledMenuHeight = MenuSize.Y / globalScale
                         local vTop = MenuPos.Y + 70
                         local vBottom = MenuPos.Y + unscaledMenuHeight - 15
-                        
+
                         if elTop >= vTop - 2 and elBottom <= vBottom + 2 then
                             isVis = true
                         else
                             isVis = false
                         end
-                        
+
                         origPos = Vector2.new(baseCX, elTop)
                         el.UnscaledPos = origPos 
-                        
+
                         if el.SetBtn then
                             el.SetUnscaledPos = Vector2.new(origPos.X + currentWidth - 30, origPos.Y)
                             el.SetUnscaledSize = Vector2.new(30, (el.Type == "Toggle") and 30 or 25)
@@ -1319,7 +1358,7 @@ function severeui:createwindow(options)
                             if el.Type == "Toggle" then h = 36 elseif el.Type == "Slider" then h = 46 elseif el.Type == "Button" or el.Type == "Dropdown" then h = 31 elseif el.Type == "Label" or el.Type == "TextLabel" then h = 18 elseif el.Type == "Separator" then h = 14 elseif el.Type == "Spacer" then h = el.Height or 10 end
                             eY[p][el.Col] = eY[p][el.Col] + h
                         end
-                        
+
                     elseif el.Popup and el.Popup == State.ActivePopup and State.PopAlpha > 0.01 then
                         isVis = true
                         isPop = true
@@ -1329,7 +1368,7 @@ function severeui:createwindow(options)
                         local cX = pStartX
                         currentWidth = pColW
                         local baseCX = cX
-                        
+
                         if el.CustomWidth then
                             currentWidth = math.floor(pColW * el.CustomWidth)
                             if el.CustomOffset then baseCX = cX + math.floor(pColW * el.CustomOffset) end
@@ -1339,11 +1378,11 @@ function severeui:createwindow(options)
                             currentWidth = math.floor((pColW / 2) - 2.5)
                             baseCX = cX + math.floor((pColW / 2) + 2.5)
                         end
-                        
+
                         local localPos = Vector2.new(baseCX, cY)
                         el.UnscaledPos = finalPopPos + localPos 
                         origPos = localPos 
-                        
+
                         if el.SetBtn then
                             el.SetUnscaledPos = Vector2.new(finalPopPos.X + origPos.X + currentWidth - 30, finalPopPos.Y + origPos.Y)
                             el.SetUnscaledSize = Vector2.new(30, (el.Type == "Toggle") and 30 or 25)
@@ -1359,6 +1398,9 @@ function severeui:createwindow(options)
                     if not isVis then
                         if el.Bg then el.Bg.Visible = false end
                         if el.Txt then el.Txt.Visible = false end
+                        if el.ColorIndicator then
+                            el.ColorIndicator.Visible = false
+                        end
                         if el.Type == "Toggle" then el.TogBg.Visible = false; el.TogKnob.Visible = false; if el.SetBtn then el.SetBtn.Visible = false; el.SetTxt.Visible = false end
                         elseif el.Type == "Slider" then el.FillBg.Visible = false; el.Fill.Visible = false; el.ValBg.Visible = false; el.ValTxt.Visible = false; if el.SetBtn then el.SetBtn.Visible = false; el.SetTxt.Visible = false end
                         elseif el.Type == "Dropdown" then el.Icon.Visible = false; if el.SetBtn then el.SetBtn.Visible = false; el.SetTxt.Visible = false end
@@ -1415,6 +1457,22 @@ function severeui:createwindow(options)
                                 end
                             end)
                             el.Txt.ZIndex = isPop and 25 or 6
+                        end
+
+                        if el.ColorIndicator then
+                            local size = getScale(Vector2.new(12 * pScale, 12 * pScale))
+                            local margin = getScale(Vector2.new(10 * pScale, 0)).X
+                            el.ColorIndicator.Visible = true
+                            el.ColorIndicator.Size = size
+                            el.ColorIndicator.Position = Vector2.new(
+                                dPos.X + dSize.X - size.X - margin,
+                                dPos.Y + dSize.Y / 2 - size.Y / 2
+                            )
+                            el.ColorIndicator.Color =
+                                State[el.ColorStateKey] or Color3.new(1, 1, 1)
+                            el.ColorIndicator.Transparency =
+                                State.TabAlpha * textAlpha * elFade * pageFade
+                            el.ColorIndicator.ZIndex = isPop and 26 or 7
                         end
 
                         if el.Type == "Toggle" then
@@ -1539,19 +1597,19 @@ function severeui:createwindow(options)
                             el.Icon.ZIndex = isPop and 25 or 6
                             el.HoverAnim = ExpLerp(el.HoverAnim, hovered and 1 or 0, dt, 16)
                             el.Bg.Color = LerpColor(dynPanel, State.AccentCol, 0.15 * ApplyCurve(el.HoverAnim, "EaseOutQuart"))
-                            
+
                             local scaleVal12 = getScale(Vector2.new(12 * pScale, 0))
                             el.Txt.Position = Vector2.new(dPos.X + scaleVal12.X, dPos.Y + dSize.Y/2 - 6.5 * currentTextScale * sScaleMult)
                             el.Txt.Text = el.BaseText .. ": " .. State[el.StateKey]
                             el.Txt.Color = LerpColor(dynTextMain, Color3.fromRGB(90, 90, 95), el.DisabledAnim)
-                            
+
                             local scaleVal15 = getScale(Vector2.new(15 * pScale, 0))
                             el.Icon.Position = Vector2.new(dPos.X + dSize.X - scaleVal15.X, dPos.Y + dSize.Y/2 - 6.5 * currentTextScale * sScaleMult)
                             pcall(function() el.Icon.Size = math.max(1, safeN(13 * currentTextScale * pScale * sScaleMult)) end); el.Icon.Color = LerpColor(dynTextSub, Color3.fromRGB(90, 90, 95), el.DisabledAnim)
 
                             el.DropAnim = ExpLerp(el.DropAnim or 0, (State.TargetDropdown == el) and 1 or 0, dt, (#el.Options < 4) and 14 or 18)
                             if ApplyCurve(el.DropAnim, "EaseOutQuart") > 0.005 then State.ActiveDropdown = el end
-                            
+
                         elseif el.Type == "Label" or el.Type == "TextLabel" then
                             el.Bg.Visible = false
                             el.Txt.Position = isPop and popP(origPos.X + 5, origPos.Y + 1) or sP(Vector2.new(origPos.X + 5, origPos.Y + 1))
@@ -1561,7 +1619,7 @@ function severeui:createwindow(options)
                             el.Bg.Size = isPop and popS(currentWidth - 10, 1) or sS(Vector2.new(currentWidth - 10, 1))
                             el.Bg.Position = isPop and popP(origPos.X + 5, origPos.Y + 4) or sP(Vector2.new(origPos.X + 5, origPos.Y + 4))
                         end
-                        
+
                         if el.SetBtn and el.SetTxt then
                             if el.SubAnim > 0.01 then
                                 local sRPos, sRSize
@@ -1572,7 +1630,7 @@ function severeui:createwindow(options)
                                     sRPos = sP(el.SetUnscaledPos)
                                     sRSize = sS(el.SetUnscaledSize)
                                 end
-                                
+
                                 local setHov = hitBox(mPos, sRPos, sRSize) and (State.TargetPopup == "None" or State.TargetPopup == el.Popup) and not State.TargetDropdown and not isElDisabled
                                 local sdPos, sdSize, spAnim, spScale = CalcPress(sRPos, sRSize, setHov, el.SetPressAnim, dt, 0.05)
                                 el.SetPressAnim = spAnim
@@ -1638,24 +1696,24 @@ function severeui:createwindow(options)
                     ScrollTrack.Visible = false
                     ScrollThumb.Visible = false
                 end
-                
+
                 if State.DropAlpha > 0.01 and State.ActiveDropdown then
                     local el = State.ActiveDropdown
                     local isPop = (el.Popup ~= nil)
                     local zBase = isPop and 40 or 15
-                    
+
                     local dW = el.Bg.Size.X
                     local itemHeight = 22 * globalScale
                     local targetH = #el.Options * itemHeight + 4 * globalScale
                     local dH = math.floor(Lerp(0, targetH, State.DropAlpha))
-                    
+
                     DropBg.Visible = true
                     DropBg.ZIndex = zBase
                     DropBg.Size = Vector2.new(dW, dH * (State.IntroAlpha or 1))
                     DropBg.Transparency = State.DropAlpha * (State.UITrans or 1)
                     DropBg.Position = Vector2.new(el.Bg.Position.X, el.Bg.Position.Y + el.Bg.Size.Y + 2 * globalScale * (State.IntroAlpha or 1))
                     DropBg.Color = dynPanel
-                    
+
                     for i = 1, 32 do
                         local dItem = DropItems[i]
                         if el.Options[i] and (2 * globalScale + (i-1) * itemHeight) < dH - 5 * globalScale then
@@ -1665,17 +1723,17 @@ function severeui:createwindow(options)
                                 DropBg.Position.Y + (2 * globalScale + (i-1) * itemHeight) * (State.IntroAlpha or 1)
                             )
                             local itemSize = Vector2.new(dW - 4 * globalScale * (State.IntroAlpha or 1), 20 * globalScale * (State.IntroAlpha or 1))
-                            
+
                             local hov = hitBox(GlobalMousePos or UIS:GetMouseLocation(), itemPos, itemSize) and State.TargetDropdown == el
                             dItem.HoverAnim = ExpLerp(dItem.HoverAnim or 0, hov and 1 or 0, dt, 18)
-                            
+
                             dItem.Bg.Visible = true
                             dItem.Bg.ZIndex = zBase + 1
                             dItem.Bg.Size = itemSize
                             dItem.Bg.Position = itemPos
                             dItem.Bg.Transparency = State.DropAlpha * (State.ButtonTrans or 1)
                             dItem.Bg.Color = dynPanel:Lerp(dynAccentOff, dItem.HoverAnim)
-                            
+
                             dItem.Txt.Visible = true
                             dItem.Txt.ZIndex = zBase + 2
                             dItem.Txt.Position = Vector2.new(
@@ -2440,6 +2498,9 @@ function severeui:createwindow(options)
                     for _, el in ipairs(Elements) do
                         if el.Bg then el.Bg.Visible = false end
                         if el.Txt then el.Txt.Visible = false end
+                        if el.ColorIndicator then
+                            el.ColorIndicator.Visible = false
+                        end
                         if el.Type == "Toggle" then el.TogBg.Visible = false; el.TogKnob.Visible = false; if el.SetBtn then el.SetBtn.Visible = false; el.SetTxt.Visible = false end
                         elseif el.Type == "Slider" then el.FillBg.Visible = false; el.Fill.Visible = false; el.ValBg.Visible = false; el.ValTxt.Visible = false; if el.SetBtn then el.SetBtn.Visible = false; el.SetTxt.Visible = false end
                         elseif el.Type == "Dropdown" then el.Icon.Visible = false; if el.SetBtn then el.SetBtn.Visible = false; el.SetTxt.Visible = false end
@@ -2552,16 +2613,16 @@ function severeui:createwindow(options)
         windowObj:createlabel("Settings", "CONFIG", 1)
         windowObj:createbutton("Settings", {Name = "Config Name...", Col = 1, IsInput = true, InputKey = "ConfigName", Callback = function(self) Focused = "ConfigName"; InputBuffers.ConfigName = "" end})
         windowObj:createbutton("Settings", {Name = "Save Config", Col = 1, Callback = function(self) if InputBuffers.ConfigName and InputBuffers.ConfigName ~= "" then SaveConfig(InputBuffers.ConfigName) end end})
-        
+
         ConfigDropdown = windowObj:createdropdown("Settings", {Name = "Select Config", StateKey = "SelectedConfig", Col = 1, Options = GetConfigs()})
-        
+
         windowObj:createbutton("Settings", {Name = "Load Config", Col = 1, Callback = function(self) if State.SelectedConfig ~= "None" then LoadConfig(State.SelectedConfig) end end})
         windowObj:createbutton("Settings", {Name = "Delete Config", Col = 1, Callback = function(self)
             if State.SelectedConfig ~= "None" then
                 if State.TargetPopup == "DeleteConfirm" then State.TargetPopup = "None" else State.PopAlpha = 0; State.TargetPopup = "DeleteConfirm" end
             end
         end})
-        
+
         local defOpts = GetDefaultConfigs()
         DefaultConfigDropdown = windowObj:createdropdown("Settings", {Name = "Default Config", StateKey = "DefaultConfigName", Col = 1, Options = defOpts})
 
@@ -2586,7 +2647,7 @@ function severeui:createwindow(options)
 
         windowObj:createcolorpicker("Settings", {Name = "Accent Color", StateKey = "AccentCol", Col = 2, Default = State.AccentCol})
         windowObj:createcolorpicker("Settings", {Name = "Main Color", StateKey = "MainCol", Col = 2, Default = State.MainCol})
-        
+
         windowObj:createbutton("Settings", {Name = "Reset Settings", Col = 2, Callback = function(self)
             local def = GetDefaultState()
             State.UITrans = def.UITrans; State.ButtonTrans = def.ButtonTrans
