@@ -35,7 +35,7 @@ local function InstId(inst)
     return tostring(tonumber(inst.Data))
 end
 
-local function CheckValidity(inst, NoHuman)
+local function CheckValidity(inst, NoHuman, CustomParts)
     if not inst or not inst.Parent then return false end
 
     if not inst:FindFirstChildOfClass("Humanoid") or not inst:FindFirstChild("HumanoidRootPart") then
@@ -47,6 +47,18 @@ local function CheckValidity(inst, NoHuman)
     if _G.CustomParts then
         for name, part in _G.CustomParts do
             if name ~= "RigType" and not inst:FindFirstChild(part) then
+                return false
+            end
+        end
+    elseif CustomParts then
+        for name, part in CustomParts do
+            if name ~= "RigType" and not inst:FindFirstChild(part) then
+                if inst:FindFirstChild("LeftArm") then
+                    if inst.LeftArm:FindFirstChild(part) then continue end
+                end
+                if inst:FindFirstChild("RightArm") then
+                    if inst.RightArm:FindFirstChild(part) then continue end
+                end
                 return false
             end
         end
@@ -69,10 +81,10 @@ local function CheckValidity(inst, NoHuman)
     return true
 end
 
-local function ResolveData(Char, BoolLocalPlayer, Health, MaxHealth, Username, DisplayName, UserId, TeamName, ToolName, NoHuman, Humanoid)
+local function ResolveData(Char, BoolLocalPlayer, Health, MaxHealth, Username, DisplayName, UserId, TeamName, ToolName, NoHuman, Humanoid, CustomParts)
     if ESPQueue[InstId(Char)] then return nil end
     if _G.ESPList[InstId(Char)] then return nil end
-    if not CheckValidity(Char, NoHuman) then return nil end
+    if not CheckValidity(Char, NoHuman, CustomParts) then return nil end
 
     ListCounter += 1
     if Username == "_Enemy" then Username = "Enemy" .. tostring(ListCounter) end
@@ -104,6 +116,18 @@ local function ResolveData(Char, BoolLocalPlayer, Health, MaxHealth, Username, D
         for name, part in _G.CustomParts do
             if name ~= "RigType" then
                 Parts[name] = Char:FindFirstChild(part)
+            end
+        end
+    elseif CustomParts then
+        if CustomParts.RigType == "R6" then
+            RigType = 0
+        elseif CustomParts.RigType == "R15" then
+            RigType = 1
+        end
+
+        for name, part in CustomParts do
+            if name ~= "RigType" then
+                Parts[name] = Char:FindFirstChild(part) or (Char:FindFirstChild("LeftArm") and Char.LeftArm:FindFirstChild(part)) or (Char:FindFirstChild("RightArm") and Char.RightArm:FindFirstChild(part))
             end
         end
     elseif RigType == 0 then
@@ -203,8 +227,8 @@ local function ResolveData(Char, BoolLocalPlayer, Health, MaxHealth, Username, D
     return Data, InstId(Char)
 end
 
-local function AddPlayer(Char, BoolLocalPlayer, Health, MaxHealth, Username, DisplayName, UserId, TeamName, ToolName, NoHuman, Humanoid)
-    if not CheckValidity(Char, NoHuman) then return nil end
+local function AddPlayer(Char, BoolLocalPlayer, Health, MaxHealth, Username, DisplayName, UserId, TeamName, ToolName, NoHuman, Humanoid, CustomParts)
+    if not CheckValidity(Char, NoHuman, CustomParts) then return nil end
     local ID = InstId(Char)
     if ESPQueue[ID] then return nil end
     if _G.ESPList[ID] then return nil end
@@ -223,7 +247,7 @@ local function AddPlayer(Char, BoolLocalPlayer, Health, MaxHealth, Username, Dis
     if TeamName == "_Enemies" then TeamName = "Enemies" end
 
     if InstId(Char) then
-        ESPQueue[InstId(Char)] = {{Char, BoolLocalPlayer, Health, MaxHealth, Username, DisplayName, UserId, TeamName, ToolName, NoHuman, Humanoid}, "Add"}
+        ESPQueue[InstId(Char)] = {{Char, BoolLocalPlayer, Health, MaxHealth, Username, DisplayName, UserId, TeamName, ToolName, NoHuman, Humanoid, CustomParts}, "Add"}
     end
 end
 
@@ -260,7 +284,7 @@ task.spawn(function()
                     task.wait(WaitTime)
                     ESPQueue[ID] = nil
 
-                    local Data, InstID = ResolveData(Table[1], Table[2], Table[3], Table[4], Table[5], Table[6], Table[7], Table[8], Table[9], Table[10], Table[11])
+                    local Data, InstID = ResolveData(Table[1], Table[2], Table[3], Table[4], Table[5], Table[6], Table[7], Table[8], Table[9], Table[10], Table[11], Table[12])
                     if not Data or not InstID then continue end
 
                     _G.ESPList[InstID] = Data["Character"]
