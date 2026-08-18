@@ -239,7 +239,7 @@ local function AddPlayer(Char, BoolLocalPlayer, Health, MaxHealth, Username, Dis
     local Username = Username or "_Enemy"
     local DisplayName = DisplayName or "_Enemy"
     local UserId = UserId or 10000
-    local ToolName = ToolName or "Gun"
+    local ToolName = ToolName or ""
     local TeamName = TeamName or "_Enemies"
     local NoHuman = NoHuman or false
     local Humanoid = Humanoid or nil
