@@ -267,7 +267,7 @@ task.spawn(function()
                     _G.ESPHealths[InstID] = Data["Health"]
                     _G.ESPData[InstID] = Data
 
-                    if Data["PrimaryPart"] then
+                    if Data["LocalPlayer"] then
                         print("Added: " .. Data["Username"] .. ", " .. tostring(Data["RigType"]))
                         add_model_data(Data, InstID)
                     else
