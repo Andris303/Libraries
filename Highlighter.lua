@@ -111,6 +111,23 @@ local function DrawPolygon(Hull, Size, Color, Opacity)
     end
 end
 
+local function DrawOutline(Hull, Size, Color, Opacity, Thickness)
+    if Size < 2 then return end
+    for Index = 1, Size do
+        local Entry = Hull[Index]
+        Convex.Scratch.Poly[Index] = Vector2.new(Entry.X, Entry.Y)
+    end
+    Convex.Scratch.Poly[Size + 1] = Vector2.new(Hull[1].X, Hull[1].Y)
+    Convex.Scratch.Poly[Size + 2] = nil
+    if Size + 1 < Convex.Static.HWMPoly then
+        for Index = Size + 2, Convex.Static.HWMPoly do
+            Convex.Scratch.Poly[Index] = nil
+        end
+    end
+    Convex.Static.HWMPoly = math.max(Convex.Static.HWMPoly, Size + 1)
+    DrawingImmediate.Polyline(Convex.Scratch.Poly, Color, Opacity, Thickness)
+end
+
 local GROUP_EPSILON = 0.0001
 local GROUP_JOIN_EPSILON = 0.75
 
@@ -520,23 +537,6 @@ local function HighlightGroup(
             Thickness
         )
     end
-end
-
-local function DrawOutline(Hull, Size, Color, Opacity, Thickness)
-    if Size < 2 then return end
-    for Index = 1, Size do
-        local Entry = Hull[Index]
-        Convex.Scratch.Poly[Index] = Vector2.new(Entry.X, Entry.Y)
-    end
-    Convex.Scratch.Poly[Size + 1] = Vector2.new(Hull[1].X, Hull[1].Y)
-    Convex.Scratch.Poly[Size + 2] = nil
-    if Size + 1 < Convex.Static.HWMPoly then
-        for Index = Size + 2, Convex.Static.HWMPoly do
-            Convex.Scratch.Poly[Index] = nil
-        end
-    end
-    Convex.Static.HWMPoly = math.max(Convex.Static.HWMPoly, Size + 1)
-    DrawingImmediate.Polyline(Convex.Scratch.Poly, Color, Opacity, Thickness)
 end
 
 local function Highlight(inst, color, opacityFill, opacityOutline, Thickness)
