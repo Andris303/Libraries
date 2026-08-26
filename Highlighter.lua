@@ -549,7 +549,7 @@ local function Highlight(inst, color, opacityFill, opacityOutline, Thickness)
     DrawOutline(Convex.Scratch.Hull, Size, color, opacityOutline, Thickness)
 end
 
-local h = {
+return {
     Highlight = Highlight,
     HighlightGroup = HighlightGroup
 }
