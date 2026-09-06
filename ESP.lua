@@ -16,7 +16,6 @@ local R15Check = {
     "RightUpperLeg", "RightLowerLeg", "RightFoot"
 }
 
-local ListCounter = 0
 local ESPQueue = {}
 local TrackedPlayers = {}
 local LocalId
@@ -41,7 +40,26 @@ local function InstId(inst)
         return nil
     end
 
-    return tostring(tonumber(data))
+    local id = tonumber(data)
+    if not id then return nil end
+    return tostring(id)
+end
+
+local ListCounter = 0
+local AutoEnemyIdentity = {}
+
+local function GetAutoEnemyIdentity(model)
+    local id = InstId(model)
+    if not id then return nil end
+
+    local identity = AutoEnemyIdentity[id]
+    if identity then return identity end
+
+    ListCounter += 1
+    identity = {Username = "Enemy" .. tostring(ListCounter), DisplayName = "Enemy" .. tostring(ListCounter), UserId = 10000 + ListCounter}
+
+    AutoEnemyIdentity[id] = identity
+    return identity
 end
 
 local function CheckValidity(inst, NoHuman, CustomParts)
@@ -96,19 +114,13 @@ end
 
 local function ResolveData(Char, BoolLocalPlayer, Health, MaxHealth, Username, DisplayName, UserId, TeamName, ToolName, NoHuman, Humanoid, CustomParts)
     if not CheckValidity(Char, NoHuman, CustomParts) then return nil end
-    ListCounter += 1
 
-    if Username == "_Enemy" then
-        Username = "Enemy" .. tostring(ListCounter)
-    end
+    local autoIdentity
+    if Username == "_Enemy" or DisplayName == "_Enemy" or UserId == 10000 then autoIdentity = GetAutoEnemyIdentity(Char) end
 
-    if DisplayName == "_Enemy" then
-        DisplayName = "Enemy" .. tostring(ListCounter)
-    end
-
-    if UserId == 10000 then
-        UserId = 10000 + ListCounter
-    end
+    if Username == "_Enemy" and autoIdentity then Username = autoIdentity.Username end
+    if DisplayName == "_Enemy" and autoIdentity then DisplayName = autoIdentity.DisplayName end
+    if UserId == 10000 and autoIdentity then UserId = autoIdentity.UserId end
 
     local Human = Humanoid or Char:FindFirstChildOfClass("Humanoid")
 
@@ -473,27 +485,23 @@ local function QueueAdd(data)
 end
 
 local function QueueRemove(ID)
-    if not ID then
-        return
-    end
-
+    if not ID then return end
     local queued = ESPQueue[ID]
 
     if queued then
         if queued.Action == "Add" then
             ESPQueue[ID] = nil
+            return
+        elseif queued.Action == "Remove" then
+            return
         end
-
-        return
     end
 
-    if not _G.ESPList[ID] then
-        return
-    end
+    if not _G.ESPList[ID] then return end
 
     ESPQueue[ID] = {
         Action = "Remove",
-        ID = ID,
+        ID = ID
     }
 end
 
@@ -616,15 +624,15 @@ task.spawn(function()
         for ID, action in ESPQueue do
             didWork = true
             task.wait(WaitTime)
+            if ESPQueue[ID] ~= action then
+                continue
+            end
             ESPQueue[ID] = nil
-
             if action.Action == "Add" then
                 local data = action.Data
-
                 if data and TrackedPlayers[ID] == data and data.WantsVisible then
                     AddVisual(data)
                 end
-
             elseif action.Action == "Remove" then
                 RemoveVisual(ID)
             elseif action.Action == "Edit" then
@@ -684,9 +692,12 @@ local function ConfigureTracked(data, options)
     data.ShouldShow = options.ShouldShow or data.ShouldShow
     data.NoHuman = options.NoHuman == true or data.NoHuman == true
     data.CustomParts = options.CustomParts or data.CustomParts
-    data.Username = options.Username or (player and player.Name) or data.Username or "_Enemy"
-    data.DisplayName = options.DisplayName or (player and player.DisplayName) or data.DisplayName or "_Enemy"
-    data.UserId = options.UserId or (player and player.UserId) or data.UserId or 10000
+    local autoIdentity
+    if not player and (not options.Username or not options.DisplayName or not options.UserId) then autoIdentity = GetAutoEnemyIdentity(data.Character) end
+
+    data.Username = options.Username or (player and player.Name) or (data.Username ~= "_Enemy" and data.Username) or (autoIdentity and autoIdentity.Username) or "_Enemy"
+    data.DisplayName = options.DisplayName or (player and player.DisplayName) or (data.DisplayName ~= "_Enemy" and data.DisplayName) or (autoIdentity and autoIdentity.DisplayName) or data.Username or "_Enemy"
+    data.UserId = options.UserId or (player and player.UserId) or (data.UserId ~= 10000 and data.UserId) or (autoIdentity and autoIdentity.UserId) or 10000
 end
 
 local function AddPlayer(Char, OptionsOrLocal, Health, MaxHealth, Username, DisplayName, UserId, TeamName, ToolName, NoHuman, Humanoid, CustomParts)
@@ -752,19 +763,17 @@ end
 
 local function EditHealth(target, health)
     local ID = ResolveID(target)
-    if not ID then
-        return false
-    end
+    if not ID then return false end
+
+    local data = TrackedPlayers[ID]
+    if not data then return false end
 
     local fixed = FloorHealth(health)
-    if not fixed or fixed <= 0 then
-        return false
-    end
+    if not fixed or fixed <= 0 then return false end
 
-    QueueEdit(
-        ID,
-        {Health = fixed,}
-    )
+    data.Health = fixed
+    data.DisplayHealth = fixed
+    QueueEdit(ID, {Health = fixed})
 
     return true
 end
