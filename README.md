@@ -35,7 +35,7 @@ ToolName -- Number: Default tool if tool can't be tracked
 GetTool -- Function: func that is used for getting the character's tool (Tool tracking isn't default, so use this if want to show tools)
 NoHuman -- Boolean: Whether or not the character has a humanoid
 CustomParts -- Table: Custom rig table for custom player models
-Username -- String: Username to use (useful for npcs without player instances)
+Username -- String: Username to use (MAKE SURE THIS IS DIFFERENT FOR ALL NPCS, useful for npcs without player instances)
 DisplayName -- String: Displayname to use (useful for npcs without player instances)
 UserId -- String: UserId to use
 
