@@ -1,97 +1,75 @@
-# Guide to using libs in this repository
-### Highlighter.lua  
-Includes 1 function:  
-1. `Highlight(Instance: instance, Color: color3, FillOpacity: number, OutlineOpacity: number, OutlineThickness: number)`  
+# Libraries in this repo
+### Highlighter.lua
+Highlights parts in a block shape, supports baseparts, meshparts and union operations.
+1. `Highlight(Instance: instance, Color: color3, FillOpacity: number, OutlineOpacity: number, OutlineThickness: number)`
+2. `HighlightGroup(InstanceTable: table, Color: color3, FillOpacity: number, OutlineOpacity: number, OutlineThickness: number)`  
 ---
 ### Text.lua  
-Includes 2 functions:  
+Renders text on the bottom left of the screen.
 1. `Add(ID: string, Text: string, Color: color3)`  
 2. `Remove(ID: string)`  
 ---
 ### ESP.lua  
-Includes 3 functions:  
-1. `AddPlayer(CharacterInstance: instance, IsLocalPlayer: bool, Health: number, MaxHealth: number, Username: string, Displayname: string, UserId: number, TeamName: string, ToolName: string)`  
-2. `RemovePlayer(ID: string)`  
-3. `EditHealth(ID: string, Health: number)`
-4. Also uses 3 global values: Read-only: `_G.ESPList`, `_G.ESPHealths` | Can be declared: `_G.WaitTime`, `_G.CustomParts`
+An easy to use library to add ESP support to games. All model, health, team, rig tracking is done by the script.
+1. `AddPlayer(Character: instance, Data: table)`
+2. `IsTracked()`
+3. `SetEnabled(Enable: bool)`
+4. `Clear()`
++ 3 Misc. functions
 
-`_G.CustomParts` Syntax:
+AddPlayer data table formatting:
+The data table isn't required, but it should be used to change how the library handles adding the character.
+
 ```lua
--- R6:
-{
-  RigType = "R6",
-  HumanoidRootPart = "HumanoidRootPart", -- Name of root instance
-  Head = "Head" -- Name of head
-  Torso = "Torso" -- Name of torso
-  RightArm = "Right Arm" -- Name of right arm
-  -- ... other body parts
-}
--- R15:
-{
-  RigType = "R15",
-  HumanoidRootPart = "HumanoidRootPart", -- Name of root instance
-  Head = "Head" -- Name of head
-  UpperTorso = "UpperTorso" -- Name of upper torso
-  -- ... other body parts
+Player -- Instance: player associated with the character
+IsLocal -- Boolean: is this the local player?
+HealthSource -- Instance: object that health is read from (can be humanoid or numbervalue)
+GetHealth -- Function: func that is used for getting the character's health (incase of special health tracking)
+Health -- Number: Default health if health can't be tracked
+MaxHealth -- Number: Default maxhealth if maxhealth can't be tracked
+TeamType -- String: How the player's team should be read: types: "Player": .Team property of the player, "Parent" name of the parent of the instance, "Manual" set team manually
+TeamName -- String: Default team if team can't be tracked
+LocalTeamname -- String: Name of friendly team (IMPORTANT: this is required if you want to use severe's teamcheck)
+GetTeam -- Function: func that is used for getting the character's team (incase of special team tracking)
+ToolName -- Number: Default tool if tool can't be tracked
+GetTool -- Function: func that is used for getting the character's tool (Tool tracking isn't default, so use this if want to show tools)
+NoHuman -- Boolean: Whether or not the character has a humanoid
+CustomParts -- Table: Custom rig table for custom player models
+Username -- String: Username to use (useful for npcs without player instances)
+DisplayName -- String: Displayname to use (useful for npcs without player instances)
+UserId -- String: UserId to use
+
+-- CustomParts formatting:
+RigParts = {
+    RigType = "R6",
+    HumanoidRootPart = "HumanoidRootPart",
+    Head = "Head",
+    Torso = "Torso",
+    RightLeg = "Right Leg",
+    ...
 }
 ```
-  
-Example for ESP.lua on the game Notoriety:  
+
+Example script:
 ```lua
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
 local ESP = loadstring(game:HttpGet("https://raw.githubusercontent.com/Andris303/Libraries/refs/heads/main/ESP.lua"))()
 
-local Players = game:GetService("Players")
-local LocalPlayer = Players.LocalPlayer
-local Camera = workspace.CurrentCamera
-local RunService = game:GetService("RunService")
-
-local function PostLocal()
-    if type(workspace:GetChildren()) ~= "table" then return end
-    if type(Players:GetChildren()) ~= "table" then return end
-    if not workspace:FindFirstChild("Police") then return end   
-    if type(workspace.Police:GetChildren()) ~= "table" then return end
-
-    local Char = LocalPlayer.Character
-    if not Char then return end
-
-    for ID, inst in _G.ESPList do
-        if not inst or not inst.Parent then
-            ESP.RemovePlayer(ID)
-        else
-            if not inst:FindFirstChild("Health") then continue end
-            if _G.ESPHealths[ID] ~= math.floor(inst.Health.Value) then
-                if inst.Health.Value <= 0 then
-                    ESP.RemovePlayer(ID)
-                    continue
-                end
-                ESP.EditHealth(ID, math.floor(inst.Health.Value))
-            end
-        end
-    end
-
-    for _, inst in workspace.Police:GetChildren() do
-        if not inst or not inst.Parent then continue end
-        if not inst:FindFirstChild("Health") then continue end
-
-        ESP.AddPlayer(inst, false, inst.Health.Value, inst.Health:GetAttribute("MaxHealth"))
-    end
-
+local function PreData()
     for _, inst in Players:GetChildren() do
-        if not inst or not inst.Parent then continue end
-        if inst ~= LocalPlayer then continue end
-
         local Char = inst.Character
-        if not Char then continue end
+        if not Char then return end
+        if not Char:FindFirstChild("Humanoid") then return end
 
-        if not Char:FindFirstChild("Health") then continue end
-
-        ESP.AddPlayer(Char, true, Char.Health.Value, Char.Health:GetAttribute("MaxHealth"), inst.Name, inst.DisplayName, inst.UserId)
+        if not ESP.IsTracked(Char) then
+            ESP.AddPlayer(Char, {
+                Player = inst,
+                TeamType = "Player",
+            })
+        end
     end
 end
 
-clear_model_data()
-
-print("Loaded")
-
-RunService.PostLocal:Connect(PostLocal)
+RunService.PreData:Connect(PreData)
 ```
