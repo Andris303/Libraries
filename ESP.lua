@@ -62,6 +62,21 @@ local function GetAutoEnemyIdentity(model)
     return identity
 end
 
+local function FindCustomPart(char, part)
+    local found = char:FindFirstChild(part)
+    if found then return found end
+
+    local containers = {"LeftArm", "RightArm", "CharacterLeftArm", "CharacterRightArm"}
+
+    for _, name in containers do
+        local container = char:FindFirstChild(name)
+        if container then
+            found = container:FindFirstChild(part)
+            if found then return found end
+        end
+    end
+end
+
 local function CheckValidity(inst, NoHuman, CustomParts)
     if not inst or not inst.Parent then
         return false
@@ -78,33 +93,22 @@ local function CheckValidity(inst, NoHuman, CustomParts)
 
     if parts then
         for name, part in parts do
-            if name ~= "RigType" and not inst:FindFirstChild(part) then
-                if inst:FindFirstChild("LeftArm") and inst.LeftArm:FindFirstChild(part) then
-                    continue
-                end
-
-                if inst:FindFirstChild("RightArm") and inst.RightArm:FindFirstChild(part) then
-                    continue
-                end
-
+            if name ~= "RigType" and not FindCustomPart(inst, part) then
                 return false
             end
         end
-
     elseif inst:FindFirstChild("Torso") then
         for _, part in R6Check do
             if not inst:FindFirstChild(part) then
                 return false
             end
         end
-
     elseif inst:FindFirstChild("UpperTorso") then
         for _, part in R15Check do
             if not inst:FindFirstChild(part) then
                 return false
             end
         end
-
     else
         return false
     end
@@ -143,10 +147,7 @@ local function ResolveData(Char, BoolLocalPlayer, Health, MaxHealth, Username, D
 
         for name, part in custom do
             if name ~= "RigType" then
-                Parts[name] =
-                    Char:FindFirstChild(part)
-                    or (Char:FindFirstChild("LeftArm") and Char.LeftArm:FindFirstChild(part))
-                    or (Char:FindFirstChild("RightArm") and Char.RightArm:FindFirstChild(part))
+                Parts[name] = FindCustomPart(Char, part)
             end
         end
     elseif RigType == 0 then
