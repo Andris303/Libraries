@@ -23,7 +23,7 @@ local function GetAnimTracks(animator)
                 return memory.readu64(track + TRACK_ANIMATOR)
             end)
             if s and trackAnimator == animatorPtr then
-                tracks[#tracks + 1] = track
+                tracks[#tracks + 1] = pointer_to_userdata(track)
             end
         end
 
@@ -46,8 +46,8 @@ Instance.declare({
 
 
 Instance.declare({
-    class = "Animator",
-    name = "AnimationIds",
+    class = "Animation",
+    name = "AnimationId",
 
     callback = {
         get = function(self)
