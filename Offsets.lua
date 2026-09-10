@@ -44,6 +44,16 @@ Instance.declare({
     }
 })
 
+Instance.declare({
+    class = "AnimationTrack",
+    name = "Animation",
+
+    callback = {
+        get = function(self)
+            return pointer_to_userdata(memory.readu64(self, TRACK_ANIMATION))
+        end,
+    }
+})
 
 Instance.declare({
     class = "Animation",
