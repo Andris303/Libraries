@@ -40,6 +40,9 @@ function severeui:createwindow(options)
     local HttpService = game:GetService("HttpService")
     local LocalPlayer = Players.LocalPlayer
     local Camera = workspace.CurrentCamera
+    local StateCallbacks = {}
+
+    
 
     options = options or {}
     local minMenuSizeX = options.CustomResolution and options.CustomResolution.X or 580
@@ -92,6 +95,11 @@ function severeui:createwindow(options)
     end
 
     local State = GetDefaultState()
+
+    local function RunStateCallback(name)
+        local callback = StateCallbacks[name]
+        if callback then pcall(callback, State[name]) end
+    end
 
     local ConfigKeys = {
         "UITrans", "ButtonTrans", "Transparent", "LightMode", "AccentCol", "MainCol", "AccentColAlpha", "MainColAlpha",
@@ -340,6 +348,11 @@ function severeui:createwindow(options)
                         end
                     end
                 end
+                for key, callback in StateCallbacks do
+                    if data[key] ~= nil then
+                        pcall(callback, State[key])
+                    end
+                end
                 local savedScale = 1.0
                 if State.MenuSizeX then
                     if options.CustomResolution and minMenuSizeX ~= 580 and State.MenuSizeX == 580 then
@@ -351,12 +364,6 @@ function severeui:createwindow(options)
                 MenuSize = Vector2.new(minMenuSizeX * savedScale, minMenuSizeY * savedScale)
                 if not isAutoLoad then State.SelectedConfig = name end
                 GenerateSnow()
-            end
-        end
-
-        for _, el in Elements do
-            if el.StateKey and data[el.StateKey] ~= nil and el.ConfigCallback then
-                pcall(el.ConfigCallback, State[el.StateKey])
             end
         end
     end
@@ -460,9 +467,9 @@ function severeui:createwindow(options)
             State["Target_" .. ColorPicker.Target] = ColorPicker.Color
 
             local aKey = GetAlphaKey(ColorPicker.Target)
-            if aKey then
-                State[aKey] = ColorPicker.Alpha
-            end
+            if aKey then State[aKey] = ColorPicker.Alpha end
+
+            RunStateCallback(ColorPicker.Target)
         end
     end
 
@@ -474,12 +481,17 @@ function severeui:createwindow(options)
     end
 
     local function Apply()
+        local changedColor = false
         if Focused == "Hex" then
             local newC = fromHex(InputBuffers.Hex)
             if newC then
                 ColorPicker.Color = newC
                 ColorPicker.H, ColorPicker.S, ColorPicker.V = newC:ToHSV()
-                if ColorPicker.Target then State[ColorPicker.Target] = ColorPicker.Color end
+                if ColorPicker.Target then
+                    State[ColorPicker.Target] = ColorPicker.Color
+                    State["Target_" .. ColorPicker.Target] = ColorPicker.Color
+                    changedColor = true
+                end
             end
         elseif Focused == "Red" or Focused == "Green" or Focused == "Blue" or Focused == "Alpha" then
             local val = tonumber(InputBuffers[Focused])
@@ -488,24 +500,31 @@ function severeui:createwindow(options)
                     ColorPicker.Alpha = math.clamp(val / 100, 0, 1)
                 else
                     local r, g, b = ColorPicker.Color.R, ColorPicker.Color.G, ColorPicker.Color.B
-                    if Focused == "Red" then r = math.clamp(val/255, 0, 1)
-                    elseif Focused == "Green" then g = math.clamp(val/255, 0, 1)
-                    elseif Focused == "Blue" then b = math.clamp(val/255, 0, 1) end
+                    if Focused == "Red" then
+                        r = math.clamp(val / 255, 0, 1)
+                    elseif Focused == "Green" then
+                        g = math.clamp(val / 255, 0, 1)
+                    elseif Focused == "Blue" then
+                        b = math.clamp(val / 255, 0, 1)
+                    end
                     ColorPicker.Color = Color3.new(r, g, b)
                     ColorPicker.H, ColorPicker.S, ColorPicker.V = ColorPicker.Color:ToHSV()
                 end
                 if ColorPicker.Target then
                     State[ColorPicker.Target] = ColorPicker.Color
+                    State["Target_" .. ColorPicker.Target] = ColorPicker.Color
                     local aKey = GetAlphaKey(ColorPicker.Target)
                     if aKey then State[aKey] = ColorPicker.Alpha end
+                    changedColor = true
                 end
             end
         elseif Focused and State[Focused] ~= nil then
             if type(State[Focused]) == "number" then
-                local val = tonumber(InputBuffers[Focused]);
-                if val then State[Focused] = val end
+                local val = tonumber(InputBuffers[Focused])
+                if val then windowObj:setvalue(Focused, val) end
             end
         end
+        if changedColor then RunStateCallback(ColorPicker.Target) end
         Focused = nil
     end
 
@@ -518,7 +537,10 @@ function severeui:createwindow(options)
 
     function windowObj:setvalue(name, value)
         State[name] = value
-        State["Target_"..name] = value
+        State["Target_" .. name] = value
+
+        local callback = StateCallbacks[name]
+        if callback then callback(value) end
     end
 
     function windowObj:createtab(name)
@@ -568,11 +590,14 @@ function severeui:createwindow(options)
         if not isConfigAdded then table.insert(ConfigKeys, name) end
     end
 
-    function windowObj:registerkey(name, default)
-        if State[name] == nil then
-            State[name] = default
-        end
+    function windowObj:registerkey(name, default, callback)
+        if State[name] == nil then State[name] = default end
         RegisterKey(name)
+
+        if callback then
+            StateCallbacks[name] = callback
+            task.spawn(function() callback(State[name]) end)
+        end
     end
 
     function windowObj:createtoggle(tabName, o)
@@ -586,11 +611,11 @@ function severeui:createwindow(options)
             if o.Default ~= nil then State[stateKey] = o.Default else State[stateKey] = false end
         end
 
-        if State[stateKey] == true and o.Callback then
-            task.spawn(function() o.Callback(true) end)
-        end
-
         RegisterKey(stateKey)
+        if o.Callback then
+            StateCallbacks[stateKey] = o.Callback
+            task.spawn(function() o.Callback(State[stateKey]) end)
+        end
 
         local setBtn, setTxt
         if o.SetIcon then
@@ -603,8 +628,7 @@ function severeui:createwindow(options)
         Callback = function(self)
             State[self.StateKey] = not State[self.StateKey]
             if o.Callback then o.Callback(State[self.StateKey]) end
-        end,
-        ConfigCallback = o.Callback
+        end
         }
         table.insert(Elements, el)
         return el
@@ -624,6 +648,10 @@ function severeui:createwindow(options)
         local valTxt = CreateText(tostring(State[stateKey]), 13, true, Theme.TextMain, 7)
 
         RegisterKey(stateKey)
+        if o.Callback then
+            StateCallbacks[stateKey] = o.Callback
+            task.spawn(function() o.Callback(State[stateKey]) end)
+        end
 
         local setBtn, setTxt
         if o.SetIcon then
@@ -634,8 +662,7 @@ function severeui:createwindow(options)
         local el = { Bg = bg, FillBg = fBg, Fill = fFill, Txt = t, ValBg = valBg, ValTxt = valTxt, SetBtn = setBtn, SetTxt = setTxt, BaseText = o.Name,
             Tab = (not o.Popup) and tabName or nil, Popup = o.Popup, Col = o.Col or 1, Type = "Slider", Min = o.Min or 0, Max = o.Max or 100, Step = o.Step, StateKey = stateKey, InputKey = stateKey, IsFloat = o.IsFloat, Anim = 0, SubAnim = 0, BtnHoverAnim = 0, HoverAnim = 0, DisabledAnim = 0, Half = o.Half, SameRow = o.SameRow, CustomWidth = o.CustomWidth, CustomOffset = o.CustomOffset,
             SetCallback = o.SetCallback, SetPopup = o.SetPopup,
-            Callback = function(val) State[stateKey] = val; if o.Callback then o.Callback(val) end end,
-            ConfigCallback = o.Callback
+            Callback = function(val) State[stateKey] = val; if o.Callback then o.Callback(val) end end
         }
         table.insert(Elements, el)
         return el
@@ -660,6 +687,10 @@ function severeui:createwindow(options)
         local icon = CreateText("▼", 13, true, Theme.TextSub, 6)
 
         RegisterKey(stateKey)
+        if o.Callback then
+            StateCallbacks[stateKey] = o.Callback
+            task.spawn(function() o.Callback(State[stateKey]) end)
+        end
 
         local setBtn, setTxt
         if o.SetIcon then
@@ -718,6 +749,12 @@ function severeui:createwindow(options)
 
         el.ColorIndicator = indicator
         el.ColorStateKey = stateKey
+
+        RegisterKey(stateKey)
+        if o.Callback then
+            StateCallbacks[stateKey] = o.Callback
+            task.spawn(function() o.Callback(State[stateKey]) end)
+        end
 
         return el
     end
@@ -1062,8 +1099,12 @@ function severeui:createwindow(options)
                             end)
                             local lpLow = bindToSet:lower()
                             if not lpLow:match("mouse") and not lpLow:match("button") and bindToSet ~= "Unknown" then
-                                if Focused == "Keybind" then State.Keybind = bindToSet
-                                else if bindToSet == "Escape" or bindToSet == "Backspace" then State[Focused] = "None" else State[Focused] = bindToSet end end
+                                if Focused == "Keybind" then
+                                    State.Keybind = bindToSet
+                                else
+                                    windowObj:setvalue(Focused, (bindToSet == "Escape" or bindToSet == "Backspace") and "None" or bindToSet)
+                                end
+
                                 Focused = nil
                             end
                         elseif lastPressed == "Backspace" then InputBuffers[Focused] = string.sub(InputBuffers[Focused], 1, -2)
@@ -2263,8 +2304,24 @@ function severeui:createwindow(options)
                                         elseif gBg and gBg.Visible and hitBox(mPos, gBg_pos, gBg_size) then Interaction.Active = true; Interaction.Mode = "CustomG"; hit = true
                                         elseif bBg and bBg.Visible and hitBox(mPos, bBg_pos, bBg_size) then Interaction.Active = true; Interaction.Mode = "CustomB"; hit = true
                                         elseif hexBg and hexBg.Visible and hitBox(mPos, hexBg.Position, hexBg.Size) then hit = ScheduleClick(hexBg.Position, hexBg.Size, function() Focused = "Hex"; InputBuffers.Hex = toHex(ColorPicker.Color):gsub("#","") end)
-                                        elseif applyBg and applyBg.Visible and hitBox(mPos, applyBg.Position, applyBg.Size) then hit = ScheduleClick(applyBg.Position, applyBg.Size, function() State[ColorPicker.Target] = ColorPicker.Color; State["Target_"..ColorPicker.Target] = ColorPicker.Color; if State.PreviousPopup and State.PreviousPopup ~= "None" then State.TargetPopup = State.PreviousPopup; State.PopAlpha = 0; State.PreviousPopup = nil else State.TargetPopup = "None" end end)
-                                        elseif resetBg and resetBg.Visible and hitBox(mPos, resetBg.Position, resetBg.Size) then hit = ScheduleClick(resetBg.Position, resetBg.Size, function() ResetToDefault(ColorPicker.Target); State["Target_"..ColorPicker.Target] = ColorPicker.Color end)
+                                        elseif applyBg and applyBg.Visible and hitBox(mPos, applyBg.Position, applyBg.Size) then
+    hit = ScheduleClick(applyBg.Position, applyBg.Size, function()
+        State[ColorPicker.Target] = ColorPicker.Color
+        State["Target_" .. ColorPicker.Target] = ColorPicker.Color
+
+        if State.PreviousPopup and State.PreviousPopup ~= "None" then
+            State.TargetPopup = State.PreviousPopup
+            State.PopAlpha = 0
+            State.PreviousPopup = nil
+        else
+            State.TargetPopup = "None"
+        end
+    end)
+                                        elseif resetBg and resetBg.Visible and hitBox(mPos, resetBg.Position, resetBg.Size) then
+    hit = ScheduleClick(resetBg.Position, resetBg.Size, function()
+        ResetToDefault(ColorPicker.Target)
+        RunStateCallback(ColorPicker.Target)
+    end)
                                         elseif hitBox(mPos, PopBg.Position, PopBg.Size) then Interaction.Active = true; Interaction.Mode = "Shield"; hit = true end
                                     elseif State.ActivePopup == "Snowfall" then
                                         if hitBox(mPos, SnowPop_TogBg.Position, SnowPop_TogBg.Size) then hit = ScheduleClick(SnowPop_TogBg.Position, SnowPop_TogBg.Size, function() State.Snowfall = not State.Snowfall end)
