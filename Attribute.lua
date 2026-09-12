@@ -309,8 +309,14 @@ local function GetCachedAttributeEntry(instance, name)
 end
 
 local function PrepareAttributeSetter(instance, name)
-    local entry, valueType = GetCachedAttributeEntry(instance, name)
+    local entry = FindAttributeEntry(instance, name)
     if not entry then return nil end
+
+    local okType, typePtr = pcall(memory.readu64, entry, 0x8)
+    if not okType or not typePtr then return nil end
+
+    local valueType = ATTRIBUTE_TYPES[typePtr - tonumber(memory.base)]
+    if not valueType then return nil end
 
     if valueType == "number" then
         return function(value)
