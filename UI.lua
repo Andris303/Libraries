@@ -603,7 +603,7 @@ function severeui:createwindow(options)
         Callback = function(self)
             State[self.StateKey] = not State[self.StateKey]
             if o.Callback then o.Callback(State[self.StateKey]) end
-        end
+        end,
         ConfigCallback = o.Callback
         }
         table.insert(Elements, el)
@@ -634,7 +634,7 @@ function severeui:createwindow(options)
         local el = { Bg = bg, FillBg = fBg, Fill = fFill, Txt = t, ValBg = valBg, ValTxt = valTxt, SetBtn = setBtn, SetTxt = setTxt, BaseText = o.Name,
             Tab = (not o.Popup) and tabName or nil, Popup = o.Popup, Col = o.Col or 1, Type = "Slider", Min = o.Min or 0, Max = o.Max or 100, Step = o.Step, StateKey = stateKey, InputKey = stateKey, IsFloat = o.IsFloat, Anim = 0, SubAnim = 0, BtnHoverAnim = 0, HoverAnim = 0, DisabledAnim = 0, Half = o.Half, SameRow = o.SameRow, CustomWidth = o.CustomWidth, CustomOffset = o.CustomOffset,
             SetCallback = o.SetCallback, SetPopup = o.SetPopup,
-            Callback = function(val) State[stateKey] = val; if o.Callback then o.Callback(val) end end
+            Callback = function(val) State[stateKey] = val; if o.Callback then o.Callback(val) end end,
             ConfigCallback = o.Callback
         }
         table.insert(Elements, el)
