@@ -353,6 +353,12 @@ function severeui:createwindow(options)
                 GenerateSnow()
             end
         end
+
+        for _, el in Elements do
+            if el.StateKey and data[el.StateKey] ~= nil and el.ConfigCallback then
+                pcall(el.ConfigCallback, State[el.StateKey])
+            end
+        end
     end
 
     local function DeleteConfig(name)
@@ -593,11 +599,13 @@ function severeui:createwindow(options)
         end
 
         local el = { Bg = bg, Txt = t, TogBg = togBg, TogKnob = togKnob, SetBtn = setBtn, SetTxt = setTxt, Tab = (not o.Popup) and tabName or nil, Popup = o.Popup, Col = o.Col or 1, Type = "Toggle", StateKey = stateKey, BaseText = o.Name, Anim = 0, SubAnim = 0, BtnHoverAnim = 0, HoverAnim = 0, DisabledAnim = 0, Half = o.Half, SameRow = o.SameRow, CustomWidth = o.CustomWidth, CustomOffset = o.CustomOffset,
-            SetCallback = o.SetCallback, SetPopup = o.SetPopup,
-            Callback = function(self)
-                State[self.StateKey] = not State[self.StateKey]
-                if o.Callback then o.Callback(State[self.StateKey]) end
-            end }
+        SetCallback = o.SetCallback, SetPopup = o.SetPopup,
+        Callback = function(self)
+            State[self.StateKey] = not State[self.StateKey]
+            if o.Callback then o.Callback(State[self.StateKey]) end
+        end
+        ConfigCallback = o.Callback
+        }
         table.insert(Elements, el)
         return el
     end
@@ -626,7 +634,9 @@ function severeui:createwindow(options)
         local el = { Bg = bg, FillBg = fBg, Fill = fFill, Txt = t, ValBg = valBg, ValTxt = valTxt, SetBtn = setBtn, SetTxt = setTxt, BaseText = o.Name,
             Tab = (not o.Popup) and tabName or nil, Popup = o.Popup, Col = o.Col or 1, Type = "Slider", Min = o.Min or 0, Max = o.Max or 100, Step = o.Step, StateKey = stateKey, InputKey = stateKey, IsFloat = o.IsFloat, Anim = 0, SubAnim = 0, BtnHoverAnim = 0, HoverAnim = 0, DisabledAnim = 0, Half = o.Half, SameRow = o.SameRow, CustomWidth = o.CustomWidth, CustomOffset = o.CustomOffset,
             SetCallback = o.SetCallback, SetPopup = o.SetPopup,
-            Callback = function(val) State[stateKey] = val; if o.Callback then o.Callback(val) end end }
+            Callback = function(val) State[stateKey] = val; if o.Callback then o.Callback(val) end end
+            ConfigCallback = o.Callback
+        }
         table.insert(Elements, el)
         return el
     end
