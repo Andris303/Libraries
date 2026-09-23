@@ -34,6 +34,7 @@ function severeui:createwindow(options)
     local windowObj = {}
     windowObj.CallerFile = callerFile
     local Connection
+    local DataConnection
     local Players = game:GetService("Players")
     local RunService = game:GetService("RunService")
     local UIS = game:GetService("UserInputService")
@@ -96,6 +97,18 @@ function severeui:createwindow(options)
 
     local State = GetDefaultState()
 
+    local PendingCalls = {}
+
+    local function Defer(fn, ...)
+        local args = table.pack(...)
+        PendingCalls[#PendingCalls + 1] = function() fn(table.unpack(args, 1, args.n)) end
+    end
+
+    local function DeferCallback(fn)
+        if not fn then return nil end
+        return function(...) Defer(fn, ...) end
+    end
+
     local function RunStateCallback(name)
         local callback = StateCallbacks[name]
         if callback then pcall(callback, State[name]) end
@@ -125,7 +138,7 @@ function severeui:createwindow(options)
     local TargetMenuPos = Vector2.new(0, 0)
     local MenuVelocity = Vector2.new(0, 0)
     local MenuSize = Vector2.new(State.MenuSizeX, State.MenuSizeY)
-    local ToggleDebounce = false
+    local ToggleDebounceUntil = 0
     local InitialCentered = false
 
     local GhostPositions = {}
@@ -421,6 +434,8 @@ function severeui:createwindow(options)
     _G.SevereCleanup = function()
         _G.SevereCleanup = nil
         if Connection then Connection:Disconnect() end
+        if DataConnection then DataConnection:Disconnect() end
+        if type(block_roblox_window) == "function" then pcall(block_roblox_window, false) end
         for _, obj in pairs(DrawCache) do pcall(function() obj:Remove() end) end
         DrawCache = {}
     end
@@ -591,6 +606,7 @@ function severeui:createwindow(options)
     end
 
     function windowObj:registerkey(name, default, callback)
+        callback = DeferCallback(callback)
         if State[name] == nil then State[name] = default end
         RegisterKey(name)
 
@@ -601,6 +617,7 @@ function severeui:createwindow(options)
     end
 
     function windowObj:createtoggle(tabName, o)
+        o.Callback = DeferCallback(o.Callback)
         local bg = CreateSquare(true, Theme.PanelBg, 1, 5, 16)
         local t = CreateText(o.Name, 13, false, Theme.TextMain, 6)
         local togBg = CreateSquare(true, Theme.AccentOff, 1, 6, 24)
@@ -635,6 +652,7 @@ function severeui:createwindow(options)
     end
 
     function windowObj:createslider(tabName, o)
+        o.Callback = DeferCallback(o.Callback)
         local bg = CreateSquare(true, Theme.PanelBg, 1, 5, 16)
         local fBg = CreateSquare(true, Theme.BgBase, 1, 6, 8)
         local fFill = CreateSquare(true, Theme.Accent, 1, 7, 8)
@@ -669,6 +687,7 @@ function severeui:createwindow(options)
     end
 
     function windowObj:createbutton(tabName, o)
+        o.Callback = DeferCallback(o.Callback)
         local bg = CreateSquare(true, Theme.PanelBg, 1, 5, 16)
         local t = CreateText(o.Name, 13, true, Theme.TextMain, 6)
 
@@ -678,6 +697,7 @@ function severeui:createwindow(options)
     end
 
     function windowObj:createdropdown(tabName, o)
+        o.Callback = DeferCallback(o.Callback)
         local bg = CreateSquare(true, Theme.PanelBg, 1, 5, 16)
         local stateKey = o.StateKey or o.Name
         if State[stateKey] == nil then
@@ -704,6 +724,7 @@ function severeui:createwindow(options)
     end
 
     function windowObj:createcolorpicker(tabName, o)
+        o.Callback = DeferCallback(o.Callback)
         local stateKey = o.StateKey or o.Name
         ColorDefaults[stateKey] = o.Default or Color3.new(1,1,1)
         if State[stateKey] == nil then
@@ -913,11 +934,100 @@ function severeui:createwindow(options)
         return typingCache or HeuristicTyping
     end
 
+    local Input = {Camera = Camera, Viewport = Vector2.new(0, 0), MousePos = Vector2.new(0, 0), Typing = false, BindDown = false, Keys = {}}
+
+    local BlockRobloxWindowHold = false
+
+    local function SetRobloxBlock(state)
+        if type(block_roblox_window) == "function" then pcall(block_roblox_window, state) end
+    end
+
+    DataConnection = RunService.PreLocal:Connect(function()
+        if _G.SevereSessionID ~= sessionID then
+            SetRobloxBlock(false)
+            if DataConnection then DataConnection:Disconnect() end
+            return
+        end
+
+        if #PendingCalls > 0 then
+            local queue = PendingCalls
+            PendingCalls = {}
+            for i = 1, #queue do task.spawn(queue[i]) end
+        end
+
+        local okView, view = pcall(function() return workspace.CurrentCamera.ViewportSize end)
+        if okView and view then
+            Input.Viewport = view
+        elseif type(getscreendimensions) == "function" then
+            local okDim, dim = pcall(getscreendimensions)
+            if okDim and dim then Input.Viewport = Vector2.new(dim.x, dim.y) end
+        end
+
+        local okMouse, mx, my = pcall(function()
+            local loc = UIS:GetMouseLocation()
+            return loc.X, loc.Y
+        end)
+        if not okMouse and type(getmouseposition) == "function" then
+            okMouse, mx, my = pcall(function()
+                local loc = getmouseposition()
+                return loc.x, loc.y
+            end)
+        end
+        if okMouse and mx and my then
+            Input.MousePos = Vector2.new(mx * State.DPIScale, my * State.DPIScale)
+        end
+
+        Input.Typing = GetIsTyping()
+
+        local bindDown = false
+        pcall(function()
+            if State.Keybind and State.Keybind ~= "" and State.Keybind ~= "None" then
+                if UIS:IsKeyDown(Enum.KeyCode[State.Keybind]) then bindDown = true end
+            end
+        end)
+        Input.BindDown = bindDown
+
+        local keys = {}
+        if State.Visible and Focused then
+            local okKeys = pcall(function()
+                local list = UIS:GetKeysPressed()
+                for j = 1, #list do
+                    keys[j] = list[j].KeyCode.Name
+                end
+            end)
+            if not okKeys and type(getpressedkeys) == "function" then
+                pcall(function()
+                    local list = getpressedkeys()
+                    for j = 1, #list do
+                        keys[j] = list[j]
+                    end
+                end)
+            end
+        end
+        Input.Keys = keys
+
+        local menuVisible = (State.IntroAlpha or 0) > 0.001
+        local mp = Input.MousePos
+        local hovering = menuVisible
+            and mp.X >= MenuPos.X and mp.X <= MenuPos.X + MenuSize.X
+            and mp.Y >= MenuPos.Y and mp.Y <= MenuPos.Y + MenuSize.Y
+
+        local leftDown = type(isleftpressed) == "function" and isleftpressed() and (type(isrbxactive) ~= "function" or isrbxactive())
+        if not BlockRobloxWindowHold then
+            BlockRobloxWindowHold = hovering and leftDown and true or false
+        elseif not leftDown then
+            BlockRobloxWindowHold = false
+        end
+
+        if not menuVisible then BlockRobloxWindowHold = false end
+
+        SetRobloxBlock(hovering or BlockRobloxWindowHold)
+    end)
+
     local lastUpdate = os.clock()
     local UIHidden = false
 
     Connection = RunService.Render:Connect(function()
-        local ok, err = pcall(function()
             if _G.SevereSessionID ~= sessionID then
                 if Connection then Connection:Disconnect() end
                 for _, obj in pairs(DrawCache) do 
@@ -926,19 +1036,16 @@ function severeui:createwindow(options)
                 DrawCache = {}
                 return
             end
-            Camera = workspace.CurrentCamera
-            if not Camera then return end
 
             local now = os.clock()
             local dt = math.min(now - lastUpdate, 0.05)
             lastUpdate = now
 
-            local rawMPos = UIS:GetMouseLocation()
-            local mPos = Vector2.new(rawMPos.X * State.DPIScale, rawMPos.Y * State.DPIScale)
+            local mPos = Input.MousePos
             local lDown = (type(isleftpressed) == "function" and isleftpressed() and (type(isrbxactive) ~= "function" or isrbxactive())) or false
             GlobalMousePos = mPos
 
-            local UserIsTyping = GetIsTyping()
+            local UserIsTyping = Input.Typing
 
             State.LightAlpha = ExpLerp(State.LightAlpha or (State.LightMode and 1 or 0), State.LightMode and 1 or 0, dt, 4.5)
             local lA = State.LightAlpha
@@ -1002,19 +1109,14 @@ function severeui:createwindow(options)
                 end
             end
 
-            if not InitialCentered and Camera.ViewportSize.X > 0 then
-                MenuPos = Vector2.new(math.floor(Camera.ViewportSize.X/2 - MenuSize.X/2), math.floor(Camera.ViewportSize.Y/2 - MenuSize.Y/2))
+            if not InitialCentered and Input.Viewport.X > 0 then
+                MenuPos = Vector2.new(math.floor(Input.Viewport.X/2 - MenuSize.X/2), math.floor(Input.Viewport.Y/2 - MenuSize.Y/2))
                 TargetMenuPos = MenuPos
                 for i = 1, #GhostPositions do GhostPositions[i] = MenuPos end
                 InitialCentered = true
             end
 
-            local bindPressed = false
-            pcall(function()
-                if State.Keybind and State.Keybind ~= "" and State.Keybind ~= "None" then
-                    if UIS:IsKeyDown(Enum.KeyCode[State.Keybind]) then bindPressed = true end
-                end
-            end)
+            local bindPressed = Input.BindDown
 
             if not bindPressed then
                 local pressedKeys = type(getpressedkeys) == "function" and getpressedkeys() or {}
@@ -1026,9 +1128,8 @@ function severeui:createwindow(options)
                 end
             end
 
-            if bindPressed and not UserIsTyping and not ToggleDebounce and Focused ~= "Keybind" and State.TargetPopup == "None" and not State.TargetDropdown then
-                State.Visible = not State.Visible; ToggleDebounce = true
-                task.spawn(function() task.wait(0.2) ToggleDebounce = false end)
+            if bindPressed and not UserIsTyping and now >= ToggleDebounceUntil and Focused ~= "Keybind" and State.TargetPopup == "None" and not State.TargetDropdown then
+                State.Visible = not State.Visible; ToggleDebounceUntil = now + 0.2
             end
 
             State.IntroAlpha = ExpLerp(State.IntroAlpha or 0, State.Visible and 1 or 0, dt, State.Visible and 18 or 24)
@@ -1063,12 +1164,9 @@ function severeui:createwindow(options)
             if State.Visible and Focused then
                 local lastPressed = (type(getpressedkey) == "function" and getpressedkey()) or ""
                 if lastPressed == "" or lastPressed == "None" then
-                    pcall(function()
-                        local keys = UIS:GetKeysPressed()
-                        if #keys > 0 then
-                            lastPressed = keys[1].KeyCode.Name
-                        end
-                    end)
+                    if #Input.Keys > 0 then
+                        lastPressed = Input.Keys[1]
+                    end
                 end
                 if lastPressed ~= "" and lastPressed ~= "None" then
                     local isNew = (lastPressed ~= LastKey)
@@ -1087,16 +1185,12 @@ function severeui:createwindow(options)
                         if lastPressed == "Enter" and isNew then Apply()
                         elseif (Focused == "Keybind" or (Focused and Focused:match("_Key$"))) and isNew then
                             local bindToSet = lastPressed
-                            pcall(function()
-                                local keys = UIS:GetKeysPressed()
-                                for j = 1, #keys do
-                                    local k = keys[j]
-                                    local kn = k.KeyCode.Name
-                                    if kn:match("Shift") or kn:match("Control") or kn:match("Alt") then
-                                        bindToSet = kn
-                                    end
+                            for j = 1, #Input.Keys do
+                                local kn = Input.Keys[j]
+                                if kn:match("Shift") or kn:match("Control") or kn:match("Alt") then
+                                    bindToSet = kn
                                 end
-                            end)
+                            end
                             local lpLow = bindToSet:lower()
                             if not lpLow:match("mouse") and not lpLow:match("button") and bindToSet ~= "Unknown" then
                                 if Focused == "Keybind" then
@@ -1775,7 +1869,7 @@ function severeui:createwindow(options)
                             )
                             local itemSize = Vector2.new(dW - 4 * globalScale * (State.IntroAlpha or 1), 20 * globalScale * (State.IntroAlpha or 1))
 
-                            local hov = hitBox(GlobalMousePos or UIS:GetMouseLocation(), itemPos, itemSize) and State.TargetDropdown == el
+                            local hov = hitBox(GlobalMousePos, itemPos, itemSize) and State.TargetDropdown == el
                             dItem.HoverAnim = ExpLerp(dItem.HoverAnim or 0, hov and 1 or 0, dt, 18)
 
                             dItem.Bg.Visible = true
@@ -2584,8 +2678,6 @@ function severeui:createwindow(options)
                     if State.ActivePopup ~= "UIFont" then hideFontPopups() end
                 end
             end
-        end)
-        if not ok then warn("Severe UI Error: " .. tostring(err)) end
     end)
 
     task.spawn(function()
