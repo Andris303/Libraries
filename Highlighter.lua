@@ -1,4 +1,4 @@
--- Credits to IAMPR1ME
+local Camera = workspace.CurrentCamera
 
 local Convex = {
     Scratch = {
@@ -53,16 +53,13 @@ local function CalculateConvexHull(Points, PointCount, Outer)
     return Size - 1
 end
 
-local function ProjectPartCorners(Part, WriteOffset)
-    local PositionX = Part.Position.X
-    local PositionY = Part.Position.Y
-    local PositionZ = Part.Position.Z
-    local HalfSizeX = Part.Size.X * 0.5
-    local HalfSizeY = Part.Size.Y * 0.5
-    local HalfSizeZ = Part.Size.Z * 0.5
-    local RightVector = Part.RightVector
-    local UpVector = Part.UpVector
-    local LookVector = Part.LookVector
+local function ProjectPartCorners(Position, RightVector, UpVector, LookVector, PartSize, WriteOffset)
+    local PositionX = Position.X
+    local PositionY = Position.Y
+    local PositionZ = Position.Z
+    local HalfSizeX = PartSize.X * 0.5
+    local HalfSizeY = PartSize.Y * 0.5
+    local HalfSizeZ = PartSize.Z * 0.5
     local RightX = RightVector.X * HalfSizeX
     local RightY = RightVector.Y * HalfSizeX
     local RightZ = RightVector.Z * HalfSizeX
@@ -83,7 +80,7 @@ local function ProjectPartCorners(Part, WriteOffset)
                     PositionY + SignR * RightY + SignU * UpY + SignL * LookY,
                     PositionZ + SignR * RightZ + SignU * UpZ + SignL * LookZ
                 )
-                local ScreenPoint, OnScreen = workspace.CurrentCamera:WorldToScreenPoint(WorldPoint)
+                local ScreenPoint, OnScreen = Camera:WorldToScreenPoint(WorldPoint)
                 if OnScreen then
                     WriteOffset = WriteOffset + 1
                     local Slot = Convex.Scratch.Points[WriteOffset]
@@ -185,8 +182,8 @@ local function ExpandPolygon(Poly, Padding)
     end
 end
 
-local function ProjectPartPolygon(Part, Padding)
-    local PointCount = ProjectPartCorners(Part, 0)
+local function ProjectPartPolygon(Position, RightVector, UpVector, LookVector, PartSize, Padding)
+    local PointCount = ProjectPartCorners(Position, RightVector, UpVector, LookVector, PartSize, 0)
 
     Convex.Static.HWMPoints = TruncateBuffer(
         Convex.Scratch.Points,
@@ -258,10 +255,8 @@ end
 local function SegmentIntersectionT(A, B, C, D)
     local RX = B.X - A.X
     local RY = B.Y - A.Y
-
     local SX = D.X - C.X
     local SY = D.Y - C.Y
-
     local Denominator = RX * SY - RY * SX
 
     if math.abs(Denominator) <= GROUP_EPSILON then
@@ -270,16 +265,10 @@ local function SegmentIntersectionT(A, B, C, D)
 
     local QX = C.X - A.X
     local QY = C.Y - A.Y
-
     local T = (QX * SY - QY * SX) / Denominator
     local U = (QX * RY - QY * RX) / Denominator
 
-    if
-        T > GROUP_EPSILON
-        and T < 1 - GROUP_EPSILON
-        and U >= -GROUP_EPSILON
-        and U <= 1 + GROUP_EPSILON
-    then
+    if T > GROUP_EPSILON and T < 1 - GROUP_EPSILON and U >= -GROUP_EPSILON and U <= 1 + GROUP_EPSILON then
         return T
     end
 
@@ -287,10 +276,7 @@ local function SegmentIntersectionT(A, B, C, D)
 end
 
 local function LerpPoint(A, B, T)
-    return {
-        X = A.X + (B.X - A.X) * T,
-        Y = A.Y + (B.Y - A.Y) * T
-    }
+    return {X = A.X + (B.X - A.X) * T, Y = A.Y + (B.Y - A.Y) * T}
 end
 
 local function BuildBoundarySegments(Polygons)
@@ -300,19 +286,14 @@ local function BuildBoundarySegments(Polygons)
         for EdgeIndex = 1, #Poly do
             local A = Poly[EdgeIndex]
             local B = Poly[EdgeIndex % #Poly + 1]
-
             local Splits = {0, 1}
 
-            -- Find every point where another body part
-            -- intersects this polygon edge.
             for OtherIndex, Other in Polygons do
                 if OtherIndex ~= PolygonIndex then
                     for OtherEdgeIndex = 1, #Other do
                         local C = Other[OtherEdgeIndex]
                         local D = Other[OtherEdgeIndex % #Other + 1]
-
                         local T = SegmentIntersectionT(A, B, C, D)
-
                         if T then
                             Splits[#Splits + 1] = T
                         end
@@ -322,14 +303,10 @@ local function BuildBoundarySegments(Polygons)
 
             table.sort(Splits)
 
-            -- Remove duplicate split values.
             local CleanSplits = {}
 
             for _, T in Splits do
-                if
-                    #CleanSplits == 0
-                    or math.abs(T - CleanSplits[#CleanSplits]) > GROUP_EPSILON
-                then
+                if #CleanSplits == 0 or math.abs(T - CleanSplits[#CleanSplits]) > GROUP_EPSILON then
                     CleanSplits[#CleanSplits + 1] = T
                 end
             end
@@ -343,27 +320,17 @@ local function BuildBoundarySegments(Polygons)
                 end
 
                 local Mid = LerpPoint(A, B, (T1 + T2) * 0.5)
-
                 local Covered = false
 
-                -- If this section of the edge is inside another
-                -- body part, it is an internal edge and shouldn't
-                -- be outlined.
                 for OtherIndex, Other in Polygons do
-                    if
-                        OtherIndex ~= PolygonIndex
-                        and PointInsideConvex(Mid, Other)
-                    then
+                    if OtherIndex ~= PolygonIndex and PointInsideConvex(Mid, Other) then
                         Covered = true
                         break
                     end
                 end
 
                 if not Covered then
-                    Boundary[#Boundary + 1] = {
-                        A = LerpPoint(A, B, T1),
-                        B = LerpPoint(A, B, T2)
-                    }
+                    Boundary[#Boundary + 1] = {A = LerpPoint(A, B, T1), B = LerpPoint(A, B, T2)}
                 end
             end
         end
@@ -376,8 +343,7 @@ local function SamePoint(A, B)
     local DX = A.X - B.X
     local DY = A.Y - B.Y
 
-    return DX * DX + DY * DY
-        <= GROUP_JOIN_EPSILON * GROUP_JOIN_EPSILON
+    return DX * DX + DY * DY <= GROUP_JOIN_EPSILON * GROUP_JOIN_EPSILON
 end
 
 local function StitchBoundary(Segments)
@@ -390,23 +356,16 @@ local function StitchBoundary(Segments)
         end
 
         Used[StartIndex] = true
-
         local Loop = {
             StartSegment.A,
             StartSegment.B
         }
-
         local StartPoint = StartSegment.A
         local CurrentPoint = StartSegment.B
-
         local Guard = 0
 
-        while
-            not SamePoint(CurrentPoint, StartPoint)
-            and Guard <= #Segments
-        do
+        while not SamePoint(CurrentPoint, StartPoint) and Guard <= #Segments do
             Guard += 1
-
             local Found = false
 
             for Index, Segment in Segments do
@@ -416,20 +375,14 @@ local function StitchBoundary(Segments)
 
                 if SamePoint(Segment.A, CurrentPoint) then
                     Used[Index] = true
-
                     Loop[#Loop + 1] = Segment.B
                     CurrentPoint = Segment.B
-
                     Found = true
                     break
                 elseif SamePoint(Segment.B, CurrentPoint) then
-                    -- Should rarely be necessary because all polygons
-                    -- are CCW, but makes stitching more robust.
                     Used[Index] = true
-
                     Loop[#Loop + 1] = Segment.A
                     CurrentPoint = Segment.A
-
                     Found = true
                     break
                 end
@@ -440,10 +393,7 @@ local function StitchBoundary(Segments)
             end
         end
 
-        if
-            #Loop >= 4
-            and SamePoint(Loop[#Loop], StartPoint)
-        then
+        if #Loop >= 4 and SamePoint(Loop[#Loop], StartPoint) then
             Loop[#Loop] = nil
 
             if #Loop >= 3 then
@@ -455,58 +405,29 @@ local function StitchBoundary(Segments)
     return Loops
 end
 
-local function HighlightGroup(
-    Parts,
-    color,
-    opacityFill,
-    opacityOutline,
-    Thickness,
-    MergePadding
-)
+local function HighlightGroup(Parts, color, opacityFill, opacityOutline, Thickness, MergePadding)
     MergePadding = MergePadding or 1.25
-
     local Polygons = {}
 
-    for _, Part in Parts do
-        if not Part or not Part.Parent then
+    for _, data in Parts do
+        if not data or not data.Parent then
             continue
         end
 
-        local Success, Poly = pcall(
-            ProjectPartPolygon,
-            Part,
-            MergePadding
-        )
+        local Success, Poly = pcall(ProjectPartPolygon, data.Position, data.RightVector, data.UpVector, data.LookVector, data.PartSize, MergePadding)
 
         if Success and Poly then
             Polygons[#Polygons + 1] = Poly
-
-            -- Each part is convex, so the existing fan-fill
-            -- remains valid.
             if opacityFill and opacityFill > 0 then
-                DrawPolygon(
-                    Poly,
-                    #Poly,
-                    color,
-                    opacityFill
-                )
+                DrawPolygon(Poly, #Poly, color, opacityFill)
             end
         end
     end
 
-    if #Polygons == 0 then
-        return
-    end
+    if #Polygons == 0 then return end
 
     if #Polygons == 1 then
-        DrawOutline(
-            Polygons[1],
-            #Polygons[1],
-            color,
-            opacityOutline,
-            Thickness
-        )
-
+        DrawOutline(Polygons[1], #Polygons[1], color, opacityOutline, Thickness)
         return
     end
 
@@ -514,34 +435,20 @@ local function HighlightGroup(
     local Loops = StitchBoundary(Segments)
 
     if #Loops == 0 then
-        -- Safety fallback.
         for _, Poly in Polygons do
-            DrawOutline(
-                Poly,
-                #Poly,
-                color,
-                opacityOutline,
-                Thickness
-            )
+            DrawOutline(Poly, #Poly, color, opacityOutline, Thickness)
         end
-
         return
     end
 
     for _, Loop in Loops do
-        DrawOutline(
-            Loop,
-            #Loop,
-            color,
-            opacityOutline,
-            Thickness
-        )
+        DrawOutline(Loop, #Loop, color, opacityOutline, Thickness)
     end
 end
 
-local function Highlight(inst, color, opacityFill, opacityOutline, Thickness)
+local function Highlight(data, color, opacityFill, opacityOutline, Thickness)
     local PointCount = 0
-    PointCount = ProjectPartCorners(inst, PointCount)
+    PointCount = ProjectPartCorners(data.Position, data.RightVector, data.UpVector, data.LookVector, data.PartSize, PointCount)
     Convex.Static.HWMPoints = TruncateBuffer(Convex.Scratch.Points, PointCount, Convex.Static.HWMPoints)
     local Size = CalculateConvexHull(Convex.Scratch.Points, PointCount, Convex.Scratch.Hull)
     Convex.Static.HWMHull = TruncateBuffer(Convex.Scratch.Hull, Size, Convex.Static.HWMHull)
@@ -549,7 +456,12 @@ local function Highlight(inst, color, opacityFill, opacityOutline, Thickness)
     DrawOutline(Convex.Scratch.Hull, Size, color, opacityOutline, Thickness)
 end
 
+local function SetCamera(NewCamera)
+    if NewCamera then Camera = NewCamera end
+end
+
 return {
     Highlight = Highlight,
-    HighlightGroup = HighlightGroup
+    HighlightGroup = HighlightGroup,
+    SetCamera = SetCamera
 }
