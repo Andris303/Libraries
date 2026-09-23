@@ -405,16 +405,33 @@ local function StitchBoundary(Segments)
     return Loops
 end
 
+local function ReadPart(Part)
+    return Part.Position, Part.RightVector, Part.UpVector, Part.LookVector, Part.Size
+end
+
+local function ResolvePose(Target)
+    if type(Target) == "table" then
+        if not Target.Parent then return nil end
+        return Target.Position, Target.RightVector, Target.UpVector, Target.LookVector, Target.PartSize
+    end
+
+    local Success, Position, RightVector, UpVector, LookVector, PartSize = pcall(ReadPart, Target)
+    if not Success then return nil end
+
+    return Position, RightVector, UpVector, LookVector, PartSize
+end
+
 local function HighlightGroup(Parts, color, opacityFill, opacityOutline, Thickness, MergePadding)
     MergePadding = MergePadding or 1.25
     local Polygons = {}
 
-    for _, data in Parts do
-        if not data or not data.Parent then
+    for _, Target in Parts do
+        local Position, RightVector, UpVector, LookVector, PartSize = ResolvePose(Target)
+        if not Position then
             continue
         end
 
-        local Success, Poly = pcall(ProjectPartPolygon, data.Position, data.RightVector, data.UpVector, data.LookVector, data.PartSize, MergePadding)
+        local Success, Poly = pcall(ProjectPartPolygon, Position, RightVector, UpVector, LookVector, PartSize, MergePadding)
 
         if Success and Poly then
             Polygons[#Polygons + 1] = Poly
@@ -446,14 +463,18 @@ local function HighlightGroup(Parts, color, opacityFill, opacityOutline, Thickne
     end
 end
 
-local function Highlight(data, color, opacityFill, opacityOutline, Thickness)
+local function Highlight(Target, color, opacityFill, opacityOutline, Thickness)
+    local Position, RightVector, UpVector, LookVector, PartSize = ResolvePose(Target)
+    if not Position then return false end
+
     local PointCount = 0
-    PointCount = ProjectPartCorners(data.Position, data.RightVector, data.UpVector, data.LookVector, data.PartSize, PointCount)
+    PointCount = ProjectPartCorners(Position, RightVector, UpVector, LookVector, PartSize, PointCount)
     Convex.Static.HWMPoints = TruncateBuffer(Convex.Scratch.Points, PointCount, Convex.Static.HWMPoints)
     local Size = CalculateConvexHull(Convex.Scratch.Points, PointCount, Convex.Scratch.Hull)
     Convex.Static.HWMHull = TruncateBuffer(Convex.Scratch.Hull, Size, Convex.Static.HWMHull)
     DrawPolygon(Convex.Scratch.Hull, Size, color, opacityFill)
     DrawOutline(Convex.Scratch.Hull, Size, color, opacityOutline, Thickness)
+    return true
 end
 
 local function SetCamera(NewCamera)
