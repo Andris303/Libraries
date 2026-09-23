@@ -35,6 +35,7 @@ function severeui:createwindow(options)
     windowObj.CallerFile = callerFile
     local Connection
     local DataConnection
+    local BlockConnection
     local Players = game:GetService("Players")
     local RunService = game:GetService("RunService")
     local UIS = game:GetService("UserInputService")
@@ -435,6 +436,7 @@ function severeui:createwindow(options)
         _G.SevereCleanup = nil
         if Connection then Connection:Disconnect() end
         if DataConnection then DataConnection:Disconnect() end
+        if BlockConnection then BlockConnection:Disconnect() end
         if type(block_roblox_window) == "function" then pcall(block_roblox_window, false) end
         for _, obj in pairs(DrawCache) do pcall(function() obj:Remove() end) end
         DrawCache = {}
@@ -936,7 +938,7 @@ function severeui:createwindow(options)
 
     local Input = {Camera = Camera, Viewport = Vector2.new(0, 0), MousePos = Vector2.new(0, 0), Typing = false, BindDown = false, Keys = {}}
 
-    local BlockRobloxWindowHold = false
+    local RobloxBlocked = false
 
     local function SetRobloxBlock(state)
         if type(block_roblox_window) == "function" then pcall(block_roblox_window, state) end
@@ -944,7 +946,6 @@ function severeui:createwindow(options)
 
     DataConnection = RunService.PreLocal:Connect(function()
         if _G.SevereSessionID ~= sessionID then
-            SetRobloxBlock(false)
             if DataConnection then DataConnection:Disconnect() end
             return
         end
@@ -1005,23 +1006,20 @@ function severeui:createwindow(options)
             end
         end
         Input.Keys = keys
+    end)
 
-        local menuVisible = (State.IntroAlpha or 0) > 0.001
-        local mp = Input.MousePos
-        local hovering = menuVisible
-            and mp.X >= MenuPos.X and mp.X <= MenuPos.X + MenuSize.X
-            and mp.Y >= MenuPos.Y and mp.Y <= MenuPos.Y + MenuSize.Y
-
-        local leftDown = type(isleftpressed) == "function" and isleftpressed() and (type(isrbxactive) ~= "function" or isrbxactive())
-        if not BlockRobloxWindowHold then
-            BlockRobloxWindowHold = hovering and leftDown and true or false
-        elseif not leftDown then
-            BlockRobloxWindowHold = false
+    BlockConnection = RunService.PostLocal:Connect(function()
+        if _G.SevereSessionID ~= sessionID then
+            SetRobloxBlock(false)
+            if BlockConnection then BlockConnection:Disconnect() end
+            return
         end
 
-        if not menuVisible then BlockRobloxWindowHold = false end
-
-        SetRobloxBlock(hovering or BlockRobloxWindowHold)
+        local want = State.Visible == true
+        if want ~= RobloxBlocked then
+            RobloxBlocked = want
+            SetRobloxBlock(want)
+        end
     end)
 
     local lastUpdate = os.clock()
