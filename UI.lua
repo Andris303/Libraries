@@ -1025,6 +1025,31 @@ function severeui:createwindow(options)
     local lastUpdate = os.clock()
     local UIHidden = false
 
+    do
+        local function Precreate(name, class, props)
+            GetDrawing(name, class, props).Visible = false
+        end
+
+        Precreate("Color_PrevBg", "Square", {Filled=true, ZIndex=24, Rounding=16})
+        Precreate("Color_PrevCol", "Square", {Filled=true, ZIndex=25, Rounding=16})
+
+        for _, name in ipairs({"ColorR", "ColorG", "ColorB"}) do
+            Precreate(name.."_Lbl", "Text", {Center=false, ZIndex=25})
+            Precreate(name.."_Bg", "Square", {Filled=true, ZIndex=24, Rounding=8})
+            Precreate(name.."_Fill", "Square", {Filled=true, ZIndex=25, Rounding=8})
+        end
+
+        for _, name in ipairs({"Color_Apply", "Color_Reset", "Color_Hex"}) do
+            Precreate(name.."Bg", "Square", {Filled=true, ZIndex=24, Rounding=16})
+            Precreate(name.."Txt", "Text", {Center=true, ZIndex=25})
+        end
+
+        for i = 1, 16 do
+            Precreate("FontPop_"..i.."_Bg", "Square", {Filled=true, Thickness=0, ZIndex=24})
+            Precreate("FontPop_"..i.."_Txt", "Text", {Center=true, ZIndex=25})
+        end
+    end
+
     Connection = RunService.Render:Connect(function()
             if _G.SevereSessionID ~= sessionID then
                 if Connection then Connection:Disconnect() end
