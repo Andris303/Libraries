@@ -1,13 +1,6 @@
+-- THIS SCRIPT IS NOT MINE
+
 local severeui = {}
-
-local FontList = {"SanFrancisco", "Tamzen", "LilitaOne", "Jersey", "Viga", "Moonstar", "Proggy", "Pixel", "Astronix", "Mario", "Beige", "Watte", "Nunito", "Proxyma_Condensed", "Avenir", "Brandon", "Avant", "Poppins", "Interum", "Holjund", "Never_Surrender", "Corperate", "Galileo"}
-local FontValid = {}
-for _, name in FontList do FontValid[name] = true end
-
-local function ValidFont(font)
-    if FontValid[font] then return font end
-    return FontList[1]
-end
 
 pcall(function()
     if typeof(Drawing) == "table" and typeof(Drawing.clear) == "function" then
@@ -89,7 +82,7 @@ function severeui:createwindow(options)
 
             SelectedConfig = "None", DefaultConfigName = "None",
             MenuSizeX = minMenuSizeX, MenuSizeY = minMenuSizeY,
-            UIFont = ValidFont(options.DefaultFont),
+            UIFont = tostring(options.DefaultFont or 5),
             HighPerformanceMode = false,
             AnimationsEnabled = true,
             LightAlpha = 0, PopCloseHovAlpha = 0,
@@ -162,20 +155,20 @@ function severeui:createwindow(options)
     local Separators = {}
 
     local FontScales = {}
-    for _, name in FontList do FontScales[name] = 1 end
+    for i = 0, 31 do FontScales[i] = 1 end
     pcall(function()
         local measureTxt = Drawing.new("Text")
         measureTxt.Text = "The quick brown fox jumps over the lazy dog 1234567890"
         measureTxt.Size = 13
-        measureTxt.Font = FontList[1]
+        measureTxt.Font = 0
         local refBounds = measureTxt.TextBounds
-        for _, name in FontList do
-            measureTxt.Font = name
+        for i = 0, 31 do
+            measureTxt.Font = i
             local b = measureTxt.TextBounds
             if b and b.X > 0 and b.Y > 0 then
                 local ratioX = refBounds.X / b.X
                 local ratioY = refBounds.Y / b.Y
-                FontScales[name] = math.clamp(math.min(ratioX, ratioY), 0.3, 1.5)
+                FontScales[i] = math.clamp(math.min(ratioX, ratioY), 0.3, 1.5)
             end
         end
         measureTxt:Remove()
@@ -423,7 +416,7 @@ function severeui:createwindow(options)
     local function CreateText(text, size, center, color, zindex)
         local t = CreateDrawing("Text")
         t.Text = text; t.Size = size or 13; t.Color = color or Theme.TextMain
-        t.Center = center or false; t.Font = ValidFont(State.UIFont); t.Outline = false;
+        t.Center = center or false; t.Font = tonumber(State.UIFont) or 5; t.Outline = false;
         t.Visible = false; t.Transparency = 1; t.ZIndex = zindex or 6
         TextSizes[t] = size or 13
         return t
@@ -1124,7 +1117,7 @@ function severeui:createwindow(options)
             for _, sep in ipairs(Separators) do if sep.Bg then sep.Bg.Color = dynSep end end
 
             local globalScale = safeN(MenuSize.X / minMenuSizeX, 1)
-            local currentFont = ValidFont(State.UIFont)
+            local currentFont = tonumber(State.UIFont) or 5
             local fontScaleMultiplier = FontScales[currentFont] or 1
             local currentTextScale = safeN(globalScale * (State.IntroAlpha or 0) * fontScaleMultiplier, 1)
 
@@ -1965,7 +1958,7 @@ function severeui:createwindow(options)
                         PopTitle.Position = popP(pW/2, 16)
                         PopTitle.Transparency = popTextAlpha
                         PopTitle.Color = State.AccentCol
-                        PopTitle.Font = (State.ActivePopup == "UIFont") and FontList[1] or ValidFont(State.UIFont)
+                        PopTitle.Font = (State.ActivePopup == "UIFont") and 5 or (tonumber(State.UIFont) or 5)
                         PopTitle.ZIndex = 26
                         pcall(function() PopTitle.Size = math.ceil(math.max(1, safeN(14 * currentTextScale * morphAlpha))) end)
                     end
@@ -1991,7 +1984,7 @@ function severeui:createwindow(options)
                                     CL_Texts[i].Text = line
                                     CL_Texts[i].Transparency = popTextAlpha
                                     CL_Texts[i].Color = dynTextSub
-                                    CL_Texts[i].Font = ValidFont(State.UIFont)
+                                    CL_Texts[i].Font = tonumber(State.UIFont) or 5
                                     SafeSize(CL_Texts[i], 13 * currentTextScale * morphAlpha)
                                     CL_Texts[i].ZIndex = 26
                                     clY = clY + 16
@@ -2010,7 +2003,7 @@ function severeui:createwindow(options)
                             PopCloseTxt.Visible, PopCloseTxt.Position, PopCloseTxt.Transparency, PopCloseTxt.Text = isContentVisible, Vector2.new(cPos.X + cSize.X/2, cPos.Y + cSize.Y/2 - 6.5 * currentTextScale * morphAlpha), popTextAlpha, "Close"
                             PopCloseTxt.Color = LerpColor(dynTextMain, Color3.new(0, 0, 0), ApplyCurve(State.PopCloseHov, "EaseOutQuart"))
                             PopCloseTxt.Center = true
-                            PopCloseTxt.Font = ValidFont(State.UIFont)
+                            PopCloseTxt.Font = tonumber(State.UIFont) or 5
                             pcall(function() PopCloseTxt.Size = math.ceil(math.max(1, safeN(13 * currentTextScale * cScale * morphAlpha))) end)
                         end
                     elseif State.ActivePopup == "Snowfall" then
@@ -2097,7 +2090,7 @@ function severeui:createwindow(options)
                             PopCloseTxt.Visible, PopCloseTxt.Position, PopCloseTxt.Transparency, PopCloseTxt.Text = isContentVisible, Vector2.new(cPos.X + cSize.X/2, cPos.Y + cSize.Y/2 - 6.5 * currentTextScale * morphAlpha), popTextAlpha, "Close"
                             PopCloseTxt.Color = LerpColor(dynTextMain, Color3.new(0, 0, 0), ApplyCurve(State.PopCloseHov, "EaseOutQuart"))
                             PopCloseTxt.Center = true
-                            PopCloseTxt.Font = ValidFont(State.UIFont)
+                            PopCloseTxt.Font = tonumber(State.UIFont) or 5
                             pcall(function() PopCloseTxt.Size = math.ceil(math.max(1, safeN(13 * currentTextScale * cScale * morphAlpha))) end)
                         end
 
@@ -2117,7 +2110,7 @@ function severeui:createwindow(options)
 
                             local function drawColorSlider(name, yOff, lbl, colorVal, fillCol)
                                 local lblTxt = GetDrawing(name.."_Lbl", "Text", {Center=false, ZIndex=25})
-                                lblTxt.Font = ValidFont(State.UIFont)
+                                lblTxt.Font = tonumber(State.UIFont) or 5
                                 SafeSize(lblTxt, 13 * currentTextScale * morphAlpha)
                                 lblTxt.Visible, lblTxt.Position, lblTxt.Transparency, lblTxt.Text, lblTxt.Color = true, popP(sX, yOff), popTextAlpha, lbl .. ": " .. math.floor(colorVal * 255), dynTextMain
 
@@ -2142,7 +2135,7 @@ function severeui:createwindow(options)
 
                             applyBg.Visible, applyBg.Position, applyBg.Size, applyBg.Transparency = true, apPos, apSize, popTextAlpha
                             applyBg.Color = LerpColor(dynPanel, State.AccentCol, ApplyCurve(SnowPopAnim.ColorApply, "EaseOutQuart"))
-                            applyTxt.Font = ValidFont(State.UIFont)
+                            applyTxt.Font = tonumber(State.UIFont) or 5
                             SafeSize(applyTxt, 13 * currentTextScale * apScale * morphAlpha)
                             applyTxt.Visible, applyTxt.Position, applyTxt.Transparency, applyTxt.Text, applyTxt.Color = true, Vector2.new(apPos.X + apSize.X/2, apPos.Y + apSize.Y/2 - 6.5 * currentTextScale * apScale * morphAlpha), popTextAlpha, "Apply", LerpColor(dynTextMain, Color3.new(0,0,0), ApplyCurve(SnowPopAnim.ColorApply, "EaseOutQuart"))
 
@@ -2156,7 +2149,7 @@ function severeui:createwindow(options)
 
                             resetBg.Visible, resetBg.Position, resetBg.Size, resetBg.Transparency = true, rpPos, rpSize, popTextAlpha
                             resetBg.Color = LerpColor(dynPanel, Color3.fromRGB(200, 70, 70), ApplyCurve(SnowPopAnim.ColorReset, "EaseOutQuart"))
-                            resetTxt.Font = ValidFont(State.UIFont)
+                            resetTxt.Font = tonumber(State.UIFont) or 5
                             SafeSize(resetTxt, 13 * currentTextScale * rpScale * morphAlpha)
                             resetTxt.Visible, resetTxt.Position, resetTxt.Transparency, resetTxt.Text, resetTxt.Color = true, Vector2.new(rpPos.X + rpSize.X/2, rpPos.Y + rpSize.Y/2 - 6.5 * currentTextScale * rpScale * morphAlpha), popTextAlpha, "Reset", LerpColor(dynTextMain, Color3.new(0,0,0), ApplyCurve(SnowPopAnim.ColorReset, "EaseOutQuart"))
 
@@ -2170,7 +2163,7 @@ function severeui:createwindow(options)
 
                             hexBg.Visible, hexBg.Position, hexBg.Size, hexBg.Transparency = true, hpPos, hpSize, popTextAlpha
                             hexBg.Color = LerpColor((Focused == "Hex") and dynAccentOff or dynPanel, State.AccentCol, 0.25 * ApplyCurve(SnowPopAnim.ColorHex, "EaseOutQuart"))
-                            hexTxt.Font = ValidFont(State.UIFont)
+                            hexTxt.Font = tonumber(State.UIFont) or 5
                             SafeSize(hexTxt, 13 * currentTextScale * hpScale * morphAlpha)
                             local hexStr = toHex(ColorPicker.Color) or "#FFFFFF"
                             local hexDisp = (Focused == "Hex") and (InputBuffers["Hex"] .. "|") or ("#" .. hexStr:gsub("#",""):upper())
@@ -2186,7 +2179,7 @@ function severeui:createwindow(options)
                             DelConfTxt.Position = popP(pW/2, 48)
                             DelConfTxt.Text = "Are you sure you want to delete\n'" .. tostring(State.SelectedConfig) .. "'?"
                             DelConfTxt.Transparency = popTextAlpha; DelConfTxt.Color = dynTextMain; DelConfTxt.Center = true
-                            DelConfTxt.Font = ValidFont(State.UIFont); SafeSize(DelConfTxt, 13 * currentTextScale * morphAlpha)
+                            DelConfTxt.Font = tonumber(State.UIFont) or 5; SafeSize(DelConfTxt, 13 * currentTextScale * morphAlpha)
 
                             local gap = 15; local btnW = (pW - (gap * 3)) / 2; local btnH = 28; local btnY = pH - 45
                             local yesX = gap
@@ -2199,7 +2192,7 @@ function severeui:createwindow(options)
                             DelConf_YesBg.Color = LerpColor(dynPanel, State.AccentCol, ApplyCurve(SnowPopAnim.DelYes, "EaseOutQuart"))
                             DelConf_YesTxt.Visible, DelConf_YesTxt.Position, DelConf_YesTxt.Transparency = isContentVisible, Vector2.new(yPos.X + ySize.X/2, yPos.Y + ySize.Y/2 - 6.5 * currentTextScale * morphAlpha), popTextAlpha
                             DelConf_YesTxt.Color = LerpColor(dynTextMain, Color3.new(0, 0, 0), ApplyCurve(SnowPopAnim.DelYes, "EaseOutQuart")); DelConf_YesTxt.Text = "Confirm"; DelConf_YesTxt.Center = true
-                            DelConf_YesTxt.Font = ValidFont(State.UIFont); SafeSize(DelConf_YesTxt, 13 * currentTextScale * yScale * morphAlpha)
+                            DelConf_YesTxt.Font = tonumber(State.UIFont) or 5; SafeSize(DelConf_YesTxt, 13 * currentTextScale * yScale * morphAlpha)
 
                             local noX = gap * 2 + btnW
                             local noRPos, noRSize = popP(noX, btnY), popS(btnW, btnH)
@@ -2211,7 +2204,7 @@ function severeui:createwindow(options)
                             DelConf_NoBg.Color = LerpColor(dynPanel, State.AccentCol, ApplyCurve(SnowPopAnim.DelNo, "EaseOutQuart"))
                             DelConf_NoTxt.Visible, DelConf_NoTxt.Position, DelConf_NoTxt.Transparency = isContentVisible, Vector2.new(nPos.X + nSize.X/2, nPos.Y + nSize.Y/2 - 6.5 * currentTextScale * morphAlpha), popTextAlpha
                             DelConf_NoTxt.Color = LerpColor(dynTextMain, Color3.new(0, 0, 0), ApplyCurve(SnowPopAnim.DelNo, "EaseOutQuart")); DelConf_NoTxt.Text = "Cancel"; DelConf_NoTxt.Center = true
-                            DelConf_NoTxt.Font = ValidFont(State.UIFont); SafeSize(DelConf_NoTxt, 13 * currentTextScale * nScale * morphAlpha)
+                            DelConf_NoTxt.Font = tonumber(State.UIFont) or 5; SafeSize(DelConf_NoTxt, 13 * currentTextScale * nScale * morphAlpha)
                         end
 
                     elseif State.ActivePopup == "PerfUI" then
@@ -2233,7 +2226,7 @@ function severeui:createwindow(options)
                                     CL_Texts[i].Text = line
                                     CL_Texts[i].Transparency = popTextAlpha
                                     CL_Texts[i].Color = dynTextSub
-                                    CL_Texts[i].Font = ValidFont(State.UIFont)
+                                    CL_Texts[i].Font = tonumber(State.UIFont) or 5
                                     SafeSize(CL_Texts[i], 13 * currentTextScale * morphAlpha)
                                     CL_Texts[i].ZIndex = 26
                                     clY = clY + 16
@@ -2251,7 +2244,7 @@ function severeui:createwindow(options)
                             PerfUI_YesBg.Color = LerpColor(dynPanel, State.AccentCol, ApplyCurve(SnowPopAnim.PerfYes, "EaseOutQuart"))
                             PerfUI_YesTxt.Visible, PerfUI_YesTxt.Position, PerfUI_YesTxt.Transparency = isContentVisible, Vector2.new(yPos.X + ySize.X/2, yPos.Y + ySize.Y/2 - 6.5 * currentTextScale * morphAlpha), popTextAlpha
                             PerfUI_YesTxt.Color = LerpColor(dynTextMain, Color3.new(0, 0, 0), ApplyCurve(SnowPopAnim.PerfYes, "EaseOutQuart")); PerfUI_YesTxt.Text = "Confirm"; PerfUI_YesTxt.Center = true
-                            PerfUI_YesTxt.Font = ValidFont(State.UIFont); SafeSize(PerfUI_YesTxt, 13 * currentTextScale * yScale * morphAlpha)
+                            PerfUI_YesTxt.Font = tonumber(State.UIFont) or 5; SafeSize(PerfUI_YesTxt, 13 * currentTextScale * yScale * morphAlpha)
 
                             local noX = gap * 2 + btnW
                             local noRPos, noRSize = popP(noX, btnY), popS(btnW, btnH)
@@ -2263,18 +2256,18 @@ function severeui:createwindow(options)
                             PerfUI_NoBg.Color = LerpColor(dynPanel, State.AccentCol, ApplyCurve(SnowPopAnim.PerfNo, "EaseOutQuart"))
                             PerfUI_NoTxt.Visible, PerfUI_NoTxt.Position, PerfUI_NoTxt.Transparency = isContentVisible, Vector2.new(nPos.X + nSize.X/2, nPos.Y + nSize.Y/2 - 6.5 * currentTextScale * morphAlpha), popTextAlpha
                             PerfUI_NoTxt.Color = LerpColor(dynTextMain, Color3.new(0, 0, 0), ApplyCurve(SnowPopAnim.PerfNo, "EaseOutQuart")); PerfUI_NoTxt.Text = "Cancel"; PerfUI_NoTxt.Center = true
-                            PerfUI_NoTxt.Font = ValidFont(State.UIFont); SafeSize(PerfUI_NoTxt, 13 * currentTextScale * nScale * morphAlpha)
+                            PerfUI_NoTxt.Font = tonumber(State.UIFont) or 5; SafeSize(PerfUI_NoTxt, 13 * currentTextScale * nScale * morphAlpha)
                         end
                     elseif State.ActivePopup == "UIFont" then
                         PopTitle.Text = "Select Font"
                         if isContentVisible then
-                            local startY = 45; local itemsPerPage = 16; local maxPages = math.ceil(#FontList / itemsPerPage)
+                            local startY = 45; local itemsPerPage = 16; local maxPages = 2
                             local startIdx = (State.PopFontPage - 1) * itemsPerPage
 
                             for i = 1, itemsPerPage do
                                 local fIdx = startIdx + i
-                                local fontName = FontList[fIdx]
-                                if fontName then
+                                local fontVal = fIdx - 1
+                                if fontVal <= 31 then
                                     local col = (i - 1) % 2; local row = math.floor((i - 1) / 2)
                                     local fBtnBtnX = 15 + (col * (pW / 2)); local fBtnBtnY = startY + (row * 28)
                                     local fBtnSizeW, fBtnSizeH = (pW / 2) - 25, 24
@@ -2285,14 +2278,20 @@ function severeui:createwindow(options)
 
                                     local fTag = "FontPop_"..i
                                     local fBg = GetDrawing(fTag.."_Bg", "Square", {Filled=true, Thickness=0, ZIndex=24}); fBg.Rounding = 12
-                                    local fTxt = GetDrawing(fTag.."_Txt", "Text", {Center=true, ZIndex=25}); fTxt.Font = fontName; SafeSize(fTxt, 13 * currentTextScale * morphAlpha)
+                                    local fTxt = GetDrawing(fTag.."_Txt", "Text", {Center=true, ZIndex=25}); fTxt.Font = fontVal; SafeSize(fTxt, 13 * currentTextScale * morphAlpha)
 
-                                    local fName = fontName:gsub("_", " ")
+                                    local fontNames = {
+                                        [0]="UI", [1]="System", [2]="Plex", [3]="Monospace", [4]="SourceSans", [5]="Arial", [6]="Cartoon", [7]="Code",
+                                        [8]="Highway", [9]="SciFi", [10]="Arcade", [11]="Fantasy", [12]="Gotham", [13]="Bodoni", [14]="Garamond", [15]="Nunito",
+                                        [16]="Oswald", [17]="Roboto", [18]="Ubuntu", [19]="Play", [20]="Jura", [21]="Titillium", [22]="Amatic", [23]="Bebas",
+                                        [24]="Lobster", [25]="Cabin", [26]="Arimo", [27]="Exo", [28]="Josefin", [29]="Orbitron", [30]="Signika", [31]="Syncopate"
+                                    }
+                                    local fName = fontNames[fontVal] or "Font "..fontVal
 
                                     fBg.Visible, fBg.Position, fBg.Size, fBg.Transparency = isContentVisible, popP(fBtnBtnX, fBtnBtnY), popS(fBtnSizeW, fBtnSizeH), popTextAlpha
-                                    fBg.Color = (fontName == ValidFont(State.UIFont)) and State.AccentCol or LerpColor(dynPanel, dynAccentOff, ApplyCurve(SnowPopAnim[fKey], "EaseOutQuart"))
+                                    fBg.Color = (tostring(fontVal) == State.UIFont) and State.AccentCol or LerpColor(dynPanel, dynAccentOff, ApplyCurve(SnowPopAnim[fKey], "EaseOutQuart"))
                                     fTxt.Visible, fTxt.Position, fTxt.Transparency, fTxt.Text = isContentVisible, popP(fBtnBtnX + fBtnSizeW/2, fBtnBtnY + 5), popTextAlpha, fName
-                                    fTxt.Color = (fontName == ValidFont(State.UIFont)) and dynMain or dynTextMain
+                                    fTxt.Color = (tostring(fontVal) == State.UIFont) and dynMain or dynTextMain
                                 else
                                     local fTag = "FontPop_"..i
                                     if DrawCache[fTag.."_Bg"] then DrawCache[fTag.."_Bg"].Visible = false end
@@ -2342,7 +2341,7 @@ function severeui:createwindow(options)
                             PopCloseTxt.Visible, PopCloseTxt.Position, PopCloseTxt.Transparency, PopCloseTxt.Text = isContentVisible, Vector2.new(cPos.X + cSize.X/2, cPos.Y + cSize.Y/2 - 6.5 * currentTextScale), popTextAlpha, "Close"
                             PopCloseTxt.Color = LerpColor(dynTextMain, Color3.new(0, 0, 0), ApplyCurve(State.PopCloseHov, "EaseOutQuart"))
                             PopCloseTxt.Center = true
-                            PopCloseTxt.Font = ValidFont(State.UIFont)
+                            PopCloseTxt.Font = tonumber(State.UIFont) or 5
                             pcall(function() PopCloseTxt.Size = math.ceil(math.max(1, safeN(13 * currentTextScale * cScale * morphAlpha))) end)
                         else
                             hideFontPopups()
@@ -2468,12 +2467,12 @@ function severeui:createwindow(options)
                                     elseif State.ActivePopup == "UIFont" then
                                         if hitBox(mPos, PopCloseBtn.Position, PopCloseBtn.Size) then hit = ScheduleClick(PopCloseBtn.Position, PopCloseBtn.Size, function() State.TargetPopup = "None" end)
                                         elseif hitBox(mPos, LP_Prev.Position, LP_Prev.Size) then hit = ScheduleClick(LP_Prev.Position, LP_Prev.Size, function() if State.PopFontPage > 1 then State.PopFontPage = State.PopFontPage - 1 end end)
-                                        elseif hitBox(mPos, LP_Next.Position, LP_Next.Size) then hit = ScheduleClick(LP_Next.Position, LP_Next.Size, function() if State.PopFontPage < math.ceil(#FontList / 16) then State.PopFontPage = State.PopFontPage + 1 end end)
+                                        elseif hitBox(mPos, LP_Next.Position, LP_Next.Size) then hit = ScheduleClick(LP_Next.Position, LP_Next.Size, function() if State.PopFontPage < 2 then State.PopFontPage = State.PopFontPage + 1 end end)
                                         else
                                             for i = 1, 16 do
                                                 local btn = DrawCache["FontPop_"..i.."_Bg"]
                                                 if btn and btn.Visible and hitBox(mPos, btn.Position, btn.Size) then
-                                                    hit = ScheduleClick(btn.Position, btn.Size, function() local fontName = FontList[(State.PopFontPage - 1) * 16 + i]; if fontName then State.UIFont = fontName end end)
+                                                    hit = ScheduleClick(btn.Position, btn.Size, function() local fontVal = (State.PopFontPage - 1) * 16 + i - 1; if fontVal <= 31 then State.UIFont = tostring(fontVal) end end)
                                                     break
                                                 end
                                             end
