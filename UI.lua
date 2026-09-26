@@ -160,7 +160,7 @@ function severeui:createwindow(options)
         local measureTxt = Drawing.new("Text")
         measureTxt.Text = "The quick brown fox jumps over the lazy dog 1234567890"
         measureTxt.Size = 13
-        measureTxt.Font = 5
+        measureTxt.Font = 0
         local refBounds = measureTxt.TextBounds
         for i = 0, 31 do
             measureTxt.Font = i
